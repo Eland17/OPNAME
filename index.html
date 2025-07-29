@@ -112,6 +112,33 @@
     user-select: none;
     font-size: 14px;
   }
+
+  /* Responsive untuk layar max 600px (mobile) */
+  @media (max-width: 600px) {
+    body {
+      flex-direction: column;
+      padding: 5px;
+    }
+    #mainSection, #listSection {
+      flex: none;
+      width: 100%;
+      margin-bottom: 20px;
+    }
+    table, #results {
+      font-size: 14px;
+    }
+    input[type=number], #saveName {
+      width: 100% !important; /* full lebar input */
+      box-sizing: border-box;
+    }
+    button {
+      width: 100%;
+      font-size: 16px;
+    }
+    ul#storageList li {
+      font-size: 12px;
+    }
+  }
 </style>
 </head>
 <body>
@@ -173,7 +200,6 @@
 
   const storageListUl = document.getElementById('storageList');
 
-  // Buat baris tabel 10x5 kolom
   function buatBaris() {
     tbody.innerHTML = '';
     for(let i=1; i<=10; i++) {
@@ -190,12 +216,10 @@
     }
   }
 
-  // Format angka ribuan
   function formatRibuan(num) {
     return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
   }
 
-  // Hitung total count dan sum
   function updateResults() {
     const inputs = tbody.querySelectorAll('.rollInput');
     let count = 0;
@@ -211,7 +235,6 @@
     updateSaveNewBtnState();
   }
 
-  // Enable/disable tombol simpan
   function updateSaveNewBtnState() {
     const saveName = saveNameInput.value.trim();
     const hasData = tbody.querySelectorAll('.rollInput').length > 0 &&
@@ -219,29 +242,21 @@
     saveNewBtn.disabled = saveName === '' || !hasData;
   }
 
-  // Simpan data ke Firestore dengan struktur objek agar tidak nested array
   async function saveDataNew() {
     const saveName = saveNameInput.value.trim();
     if(!saveName) return alert('Masukkan nama simpan terlebih dahulu.');
 
+    const data = [];
     const trs = tbody.querySelectorAll('tr');
-    // Buat objek data dengan properti row1, row2, dst
-    const dataObj = {};
-    trs.forEach((tr, i) => {
-      const values = Array.from(tr.querySelectorAll('input')).map(i => parseInt(i.value.trim()) || 0);
-      dataObj['row' + (i+1)] = {
-        roll1: values[0],
-        roll2: values[1],
-        roll3: values[2],
-        roll4: values[3],
-        roll5: values[4]
-      };
+    trs.forEach(tr => {
+      const values = Array.from(tr.querySelectorAll('input')).map(i => i.value.trim() || '0');
+      data.push(values);
     });
 
     try {
       await db.collection('stokRoll').doc(saveName).set({
         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-        data: dataObj
+        data: data
       });
       alert('Data berhasil disimpan dengan nama "' + saveName + '".');
       saveNameInput.value = '';
@@ -252,7 +267,6 @@
     }
   }
 
-  // Render list data simpan dari Firestore
   async function renderStorageList() {
     storageListUl.innerHTML = '';
     try {
@@ -291,7 +305,6 @@
     }
   }
 
-  // Load data dari Firestore ke tabel, sesuaikan dengan objek data
   async function loadData(key) {
     try {
       const doc = await db.collection('stokRoll').doc(key).get();
@@ -304,13 +317,10 @@
       const trs = tbody.querySelectorAll('tr');
       trs.forEach((tr, i) => {
         const inputs = tr.querySelectorAll('input');
-        const rowData = data['row' + (i+1)];
-        if(rowData) {
-          inputs[0].value = rowData.roll1 || 0;
-          inputs[1].value = rowData.roll2 || 0;
-          inputs[2].value = rowData.roll3 || 0;
-          inputs[3].value = rowData.roll4 || 0;
-          inputs[4].value = rowData.roll5 || 0;
+        if(data[i]) {
+          data[i].forEach((val, j) => {
+            if(inputs[j]) inputs[j].value = val;
+          });
         }
       });
       updateResults();
@@ -320,7 +330,6 @@
     }
   }
 
-  // Hapus data di Firestore
   async function deleteData(key) {
     if(!confirm('Yakin ingin menghapus data "' + key + '" ?')) return;
     try {
@@ -356,7 +365,7 @@
   });
   saveNewBtn.addEventListener('click', saveDataNew);
 
-  // Inisialisasi awal
+  // Inisialisasi
   buatBaris();
   updateResults();
   updateSaveNewBtnState();
