@@ -2,273 +2,306 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8" />
-<title>Stok Opname - Capture, Pilih Area, Putar Manual, OCR</title>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.0.2/dist/tesseract.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Stok Roll dengan List Bar Simpanan</title>
 <style>
   body {
     font-family: Arial, sans-serif;
-    padding: 20px;
-    max-width: 520px;
+    max-width: 800px;
     margin: auto;
-  }
-  video, img, canvas {
-    width: 100%;
-    max-width: 100%;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    margin-top: 10px;
-  }
-  button {
-    margin-top: 10px;
     padding: 10px;
-    width: 100%;
-    font-size: 16px;
-    cursor: pointer;
-    background-color: #007bff;
-    border: none;
-    color: white;
-    border-radius: 5px;
+    display: flex;
+    gap: 20px;
   }
-  #rotateCropBtn, #scanCropBtn {
-    width: 48%;
-    display: inline-block;
-    margin-top: 10px;
-  }
-  #rotateCropBtn {
-    background-color: #28a745;
-  }
-  #scanCropBtn {
-    background-color: #17a2b8;
-  }
-  #cropPreviewContainer {
-    margin-top: 10px;
-    position: relative;
-    text-align: center;
-  }
-  #cropPreview {
-    border: 1px solid #555;
-    max-width: 150px;
-    max-height: 150px;
-    display: block;
-    margin: auto;
+  /* Bagian tabel */
+  #mainSection {
+    flex: 2;
   }
   table {
-    width: 100%;
     border-collapse: collapse;
-    margin-top: 15px;
+    width: 100%;
+    margin-top: 10px;
   }
   th, td {
-    border: 1px solid #aaa;
+    border: 1px solid #888;
     padding: 6px;
     text-align: center;
   }
-  .delete-btn {
-    background-color: #dc3545;
-    color: white;
+  input[type=number] {
+    width: 80px;
+    padding: 4px;
+    font-size: 16px;
+    text-align: right;
+  }
+  #results {
+    margin-top: 12px;
+    font-size: 18px;
+    font-weight: bold;
+    text-align: right;
+  }
+  #saveNewSection {
+    margin-top:15px;
+    display:flex;
+    gap:8px;
+    align-items:center;
+  }
+  #saveName {
+    padding: 6px;
+    font-size: 16px;
+    flex: 1 1 200px;
+  }
+  button {
+    padding: 8px 16px;
+    font-size: 16px;
+    cursor: pointer;
     border: none;
     border-radius: 4px;
-    padding: 4px 8px;
+    color: white;
+  }
+  #saveNewBtn {
+    background-color: #28a745;
+  }
+  #saveNewBtn:disabled {
+    background-color: #999;
+    cursor: not-allowed;
+  }
+  /* List bar simpanan */
+  #listSection {
+    flex: 1;
+    border: 1px solid #ccc;
+    padding: 8px;
+    max-height: 450px;
+    overflow-y: auto;
+    background: #f9f9f9;
+    border-radius: 6px;
+  }
+  #listSection h3 {
+    margin-top: 0;
+    font-size: 20px;
+    text-align: center;
+  }
+  ul#storageList {
+    list-style: none;
+    padding-left: 0;
+    margin: 0;
+  }
+  ul#storageList li {
+    background: white;
+    margin-bottom: 8px;
+    padding: 6px 8px;  /* Sedikit diperkecil padding */
+    border-radius: 4px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    box-shadow: 0 0 3px rgba(0,0,0,0.1);
+    font-size: 14px;  /* font lebih kecil */
+  }
+  ul#storageList li:hover {
+    background: #e0f0ff;
+  }
+  ul#storageList li button.deleteBtn {
+    background: #dc3545;
+    border: none;
+    color: white;
+    border-radius: 4px;
+    font-size: 12px;  /* tombol delete juga diperkecil */
+    padding: 3px 7px;
     cursor: pointer;
   }
-  #resultMessage {
-    margin-top: 10px;
-    font-weight: bold;
-    text-align: center;
-    min-height: 20px;
+  ul#storageList li span.nameItem {
+    flex: 1;
+    user-select: none;
+    font-size: 14px; /* agar seragam dengan li */
   }
 </style>
 </head>
 <body>
 
-<h2>Stok Opname - Capture, Pilih Area, Putar Manual, OCR</h2>
+<div id="mainSection">
+  <h2>Stok Roll dengan List Bar Simpanan</h2>
 
-<video id="video" autoplay></video>
-<button id="captureBtn">Capture Gambar</button>
-<img id="capturedImg" alt="Gambar Hasil Capture" />
+  <table id="stokTable">
+    <tbody>
+      <!-- Baris dibuat otomatis -->
+    </tbody>
+  </table>
 
-<div id="cropPreviewContainer" style="display:none;">
-  <p>Preview Area Crop (Klik rotate dan scan setelah pas)</p>
-  <canvas id="cropPreview"></canvas>
-  <button id="rotateCropBtn">Putar 90°</button>
-  <button id="scanCropBtn">Scan Angka</button>
+  <div id="results">
+    <div>Qty Roll : <span id="hasilCount">0</span></div>
+    <div>Qty M/Y: <span id="hasilSum">0</span></div>
+  </div>
+
+  <div id="saveNewSection">
+    <input type="text" id="saveName" placeholder="Nama Simpan Baru" />
+    <button id="saveNewBtn" disabled>Simpan Data Baru</button>
+  </div>
 </div>
 
-<div id="resultMessage"></div>
-
-<table>
-  <thead>
-    <tr><th>No</th><th>Hasil Scan</th><th>Aksi</th></tr>
-  </thead>
-  <tbody id="scanListBody"></tbody>
-  <tfoot>
-    <tr><td><b>Total</b></td><td id="totalValue">0</td><td></td></tr>
-  </tfoot>
-</table>
-
-<canvas id="hiddenCanvas" style="display:none;"></canvas>
+<div id="listSection">
+  <h3>Daftar Simpan</h3>
+  <ul id="storageList">
+    <!-- List item muncul di sini -->
+  </ul>
+</div>
 
 <script>
-  const video = document.getElementById('video');
-  const captureBtn = document.getElementById('captureBtn');
-  const capturedImg = document.getElementById('capturedImg');
-  const cropPreviewContainer = document.getElementById('cropPreviewContainer');
-  const cropPreview = document.getElementById('cropPreview');
-  const rotateCropBtn = document.getElementById('rotateCropBtn');
-  const scanCropBtn = document.getElementById('scanCropBtn');
-  const resultMessage = document.getElementById('resultMessage');
-  const scanListBody = document.getElementById('scanListBody');
-  const totalValueCell = document.getElementById('totalValue');
-  const hiddenCanvas = document.getElementById('hiddenCanvas');
+  const tbody = document.querySelector('#stokTable tbody');
+  const hasilCountEl = document.getElementById('hasilCount');
+  const hasilSumEl = document.getElementById('hasilSum');
 
-  let rotationAngle = 0;
-  let capturedImageObj = null; // Image object from capture
-  let cropRect = null; // Area crop {x, y, width, height}
-  let scanResults = [];
+  const saveNameInput = document.getElementById('saveName');
+  const saveNewBtn = document.getElementById('saveNewBtn');
 
-  // Setup camera
-  navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-  .then(stream => {
-    video.srcObject = stream;
-  })
-  .catch(err => alert("Tidak bisa akses kamera: " + err));
+  const storageListUl = document.getElementById('storageList');
 
-  // Capture frame from video
-  captureBtn.addEventListener('click', () => {
-    const w = video.videoWidth;
-    const h = video.videoHeight;
-    hiddenCanvas.width = w;
-    hiddenCanvas.height = h;
-    const ctx = hiddenCanvas.getContext('2d');
-    ctx.drawImage(video, 0, 0, w, h);
-    const dataURL = hiddenCanvas.toDataURL('image/png');
+  const STORAGE_KEY = 'stokRollDataList';
 
-    // Load image to img element
-    capturedImg.src = dataURL;
-    rotationAngle = 0;
-    cropRect = null;
-    cropPreviewContainer.style.display = "none";
-    resultMessage.textContent = "Gambar berhasil di-capture. Klik area angka di gambar.";
-    resultMessage.style.color = "green";
-
-    // Create Image object for processing
-    capturedImageObj = new Image();
-    capturedImageObj.src = dataURL;
-  });
-
-  // Klik di gambar hasil capture => buat crop area
-  capturedImg.addEventListener('click', (e) => {
-    if (!capturedImageObj) return;
-
-    const rect = capturedImg.getBoundingClientRect();
-    const scaleX = capturedImageObj.width / rect.width;
-    const scaleY = capturedImageObj.height / rect.height;
-
-    const clickX = (e.clientX - rect.left) * scaleX;
-    const clickY = (e.clientY - rect.top) * scaleY;
-
-    const cropSize = 150; // ukuran crop kotak
-    const x = Math.max(0, Math.min(clickX - cropSize/2, capturedImageObj.width - cropSize));
-    const y = Math.max(0, Math.min(clickY - cropSize/2, capturedImageObj.height - cropSize));
-
-    cropRect = { x, y, width: cropSize, height: cropSize };
-    rotationAngle = 0; // reset rotasi saat area baru dipilih
-
-    drawCropPreview();
-
-    cropPreviewContainer.style.display = "block";
-    resultMessage.textContent = "Area crop dipilih, bisa putar dan scan.";
-  });
-
-  function drawCropPreview() {
-    if (!cropRect || !capturedImageObj) return;
-
-    const ctx = cropPreview.getContext('2d');
-    const w = cropRect.width;
-    const h = cropRect.height;
-
-    // canvas disesuaikan ukuran crop
-    cropPreview.width = w;
-    cropPreview.height = h;
-
-    ctx.clearRect(0, 0, w, h);
-
-    ctx.save();
-    // rotasi di tengah canvas crop
-    ctx.translate(w/2, h/2);
-    ctx.rotate(rotationAngle * Math.PI / 180);
-    ctx.translate(-w/2, -h/2);
-
-    // gambar crop dari captured image
-    ctx.drawImage(
-      capturedImageObj,
-      cropRect.x, cropRect.y, w, h, // crop source
-      0, 0, w, h                    // canvas dest
-    );
-    ctx.restore();
-  }
-
-  rotateCropBtn.addEventListener('click', () => {
-    if (!cropRect) return;
-    rotationAngle = (rotationAngle + 90) % 360;
-    drawCropPreview();
-    resultMessage.textContent = "Area crop diputar " + rotationAngle + "°.";
-  });
-
-  scanCropBtn.addEventListener('click', () => {
-    if (!cropRect) return;
-    resultMessage.textContent = "Memproses OCR...";
-    resultMessage.style.color = "black";
-
-    cropPreview.toBlob(blob => {
-      Tesseract.recognize(blob, 'eng').then(({ data: { text } }) => {
-        const angkaStr = text.replace(/\D/g, '');
-        if (!angkaStr) {
-          resultMessage.textContent = "Tidak ada angka terdeteksi.";
-          resultMessage.style.color = "red";
-          return;
-        }
-        const angka = parseInt(angkaStr, 10);
-        scanResults.push(angka);
-        updateTable();
-        resultMessage.textContent = "Berhasil scan angka: " + formatRibuan(angka);
-        resultMessage.style.color = "green";
-      }).catch(err => {
-        resultMessage.textContent = "Gagal OCR: " + err;
-        resultMessage.style.color = "red";
-      });
-    });
-  });
-
-  function updateTable() {
-    scanListBody.innerHTML = "";
-    scanResults.forEach((num, i) => {
-      const row = document.createElement("tr");
-      row.innerHTML = `
-        <td>${i+1}</td>
-        <td>${formatRibuan(num)}</td>
-        <td><button class="delete-btn" data-index="${i}">Hapus</button></td>
+  function buatBaris() {
+    tbody.innerHTML = '';
+    for(let i=1; i<=10; i++) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${i}</td>
+        <td><input type="number" min="0" class="rollInput"></td>
+        <td><input type="number" min="0" class="rollInput"></td>
+        <td><input type="number" min="0" class="rollInput"></td>
+        <td><input type="number" min="0" class="rollInput"></td>
+        <td><input type="number" min="0" class="rollInput"></td>
       `;
-      scanListBody.appendChild(row);
-    });
-    const total = scanResults.reduce((acc, val) => acc + val, 0);
-    totalValueCell.textContent = formatRibuan(total);
+      tbody.appendChild(tr);
+    }
   }
 
-  scanListBody.addEventListener("click", e => {
-    if (e.target.classList.contains("delete-btn")) {
-      const idx = parseInt(e.target.getAttribute("data-index"));
-      if (!isNaN(idx)) {
-        scanResults.splice(idx, 1);
-        updateTable();
-        resultMessage.textContent = "Data berhasil dihapus.";
-        resultMessage.style.color = "green";
+  function formatRibuan(num) {
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  }
+
+  function updateResults() {
+    const inputs = tbody.querySelectorAll('.rollInput');
+    let count = 0;
+    let sum = 0;
+    inputs.forEach(input => {
+      let val = parseInt(input.value);
+      if(isNaN(val) || val < 0) val = 0;
+      if(val > 0) count++;
+      sum += val;
+    });
+    hasilCountEl.textContent = count;
+    hasilSumEl.textContent = formatRibuan(sum);
+    updateSaveNewBtnState();
+  }
+
+  function updateSaveNewBtnState() {
+    const saveName = saveNameInput.value.trim();
+    const hasData = tbody.querySelectorAll('.rollInput').length > 0 &&
+                    Array.from(tbody.querySelectorAll('.rollInput')).some(i => i.value.trim() !== '');
+    saveNewBtn.disabled = saveName === '' || !hasData;
+  }
+
+  function renderStorageList() {
+    storageListUl.innerHTML = '';
+    const dataStr = localStorage.getItem(STORAGE_KEY);
+    if(!dataStr) return;
+    const dataList = JSON.parse(dataStr);
+    Object.keys(dataList).forEach(key => {
+      const li = document.createElement('li');
+      const spanName = document.createElement('span');
+      spanName.textContent = key;
+      spanName.className = 'nameItem';
+      spanName.title = "Klik untuk muat data '" + key + "'";
+      spanName.style.userSelect = 'none';
+
+      spanName.addEventListener('click', () => {
+        loadData(key);
+      });
+
+      const delBtn = document.createElement('button');
+      delBtn.textContent = 'Hapus';
+      delBtn.className = 'deleteBtn';
+      delBtn.title = 'Hapus data simpanan ini';
+      delBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if(confirm('Yakin ingin menghapus data "' + key + '" ?')) {
+          deleteData(key);
+        }
+      });
+
+      li.appendChild(spanName);
+      li.appendChild(delBtn);
+      storageListUl.appendChild(li);
+    });
+  }
+
+  function saveDataNew() {
+    const saveName = saveNameInput.value.trim();
+    if(!saveName) return alert('Masukkan nama simpan terlebih dahulu.');
+
+    const data = [];
+    const trs = tbody.querySelectorAll('tr');
+    trs.forEach(tr => {
+      const values = Array.from(tr.querySelectorAll('input')).map(i => i.value.trim() || '0');
+      data.push(values);
+    });
+
+    let dataList = {};
+    const dataStr = localStorage.getItem(STORAGE_KEY);
+    if(dataStr) dataList = JSON.parse(dataStr);
+
+    dataList[saveName] = data;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(dataList));
+
+    alert('Data berhasil disimpan dengan nama "' + saveName + '".');
+    saveNameInput.value = '';
+    updateSaveNewBtnState();
+    renderStorageList();
+  }
+
+  function loadData(key) {
+    const dataStr = localStorage.getItem(STORAGE_KEY);
+    if(!dataStr) return alert('Tidak ada data tersimpan.');
+    const dataList = JSON.parse(dataStr);
+    if(!dataList[key]) return alert('Data dengan nama tersebut tidak ditemukan.');
+
+    buatBaris();
+    const trs = tbody.querySelectorAll('tr');
+    trs.forEach((tr, i) => {
+      const inputs = tr.querySelectorAll('input');
+      if(dataList[key][i]) {
+        dataList[key][i].forEach((val, j) => {
+          if(inputs[j]) inputs[j].value = val;
+        });
       }
+    });
+    updateResults();
+    alert('Data "' + key + '" berhasil dimuat dan siap diedit.');
+  }
+
+  function deleteData(key) {
+    const dataStr = localStorage.getItem(STORAGE_KEY);
+    if(!dataStr) return;
+    let dataList = JSON.parse(dataStr);
+    if(dataList[key]) {
+      delete dataList[key];
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(dataList));
+      alert('Data "' + key + '" berhasil dihapus.');
+      renderStorageList();
+    }
+  }
+
+  saveNameInput.addEventListener('input', updateSaveNewBtnState);
+  tbody.addEventListener('input', e => {
+    if(e.target.classList.contains('rollInput')) {
+      updateResults();
     }
   });
+  saveNewBtn.addEventListener('click', saveDataNew);
 
-  function formatRibuan(x) {
-    return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-  }
+  // Inisialisasi
+  buatBaris();
+  updateResults();
+  updateSaveNewBtnState();
+  renderStorageList();
 </script>
 
 </body>
