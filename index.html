@@ -1,41 +1,22 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <title>Stok Opname OCR Kamera dengan Fokus dan Format Ribuan</title>
+  <meta charset="UTF-8">
+  <title>Stok Opname - Klik Angka dari Gambar</title>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.0.2/dist/tesseract.min.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
       padding: 20px;
-      max-width: 400px;
+      max-width: 500px;
       margin: auto;
     }
-    .video-container {
-      position: relative;
+    video, canvas, img {
       width: 100%;
-      max-width: 400px;
-      margin: auto;
-    }
-    #video {
-      width: 100%;
-      border-radius: 5px;
+      max-width: 100%;
+      margin-top: 10px;
       border: 1px solid #ccc;
-      display: block;
-    }
-    #focus-box {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 180px;
-      height: 100px;
-      margin-left: -90px;
-      margin-top: -50px;
-      border: 3px solid #00ff00;
-      border-radius: 8px;
-      box-sizing: border-box;
-      pointer-events: none;
-      mix-blend-mode: difference;
+      border-radius: 6px;
     }
     button {
       margin-top: 10px;
@@ -47,10 +28,6 @@
       border: none;
       color: white;
       border-radius: 5px;
-    }
-    button:disabled {
-      background-color: #888;
-      cursor: not-allowed;
     }
     table {
       width: 100%;
@@ -64,36 +41,36 @@
     }
     .delete-btn {
       background-color: #dc3545;
-      padding: 4px 8px;
+      color: white;
       border: none;
       border-radius: 4px;
-      color: white;
+      padding: 4px 8px;
       cursor: pointer;
     }
     #resultMessage {
       margin-top: 10px;
-      min-height: 24px;
       font-weight: bold;
       text-align: center;
-      color: green;
+      min-height: 20px;
     }
   </style>
 </head>
 <body>
 
-<h2>Stok Opname dengan OCR Kamera</h2>
+<h2>Stok Opname - Klik Angka dari Gambar</h2>
 
-<div class="video-container">
-  <video id="video" autoplay></video>
-  <div id="focus-box"></div>
-</div>
+<video id="video" autoplay></video>
+<button id="captureBtn">Capture Gambar</button>
+<canvas id="canvas" style="display:none;"></canvas>
+<img id="capturedImg" alt="Gambar Hasil Capture" />
 
-<button id="scanBtn">Scan Angka</button>
+<p>Klik di gambar hasil capture pada bagian angka untuk proses OCR.</p>
+
 <div id="resultMessage"></div>
 
 <table>
   <thead>
-    <tr><th>No</th><th>Angka Hasil Scan</th><th>Aksi</th></tr>
+    <tr><th>No</th><th>Hasil Scan</th><th>Aksi</th></tr>
   </thead>
   <tbody id="scanListBody"></tbody>
   <tfoot>
@@ -101,15 +78,14 @@
   </tfoot>
 </table>
 
-<canvas id="canvas" style="display:none;"></canvas>
-
 <script>
   const video = document.getElementById('video');
   const canvas = document.getElementById('canvas');
-  const scanBtn = document.getElementById('scanBtn');
+  const img = document.getElementById('capturedImg');
+  const captureBtn = document.getElementById('captureBtn');
+  const resultMessage = document.getElementById('resultMessage');
   const scanListBody = document.getElementById('scanListBody');
   const totalValueCell = document.getElementById('totalValue');
-  const resultMessage = document.getElementById('resultMessage');
 
   let scanResults = [];
 
@@ -117,111 +93,97 @@
     return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
   }
 
+  // Akses kamera
   navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
     .then(stream => {
       video.srcObject = stream;
     })
     .catch(err => {
-      alert('Tidak bisa akses kamera: ' + err);
+      alert("Tidak bisa akses kamera: " + err);
     });
+
+  // Capture dari video
+  captureBtn.addEventListener('click', () => {
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    img.src = canvas.toDataURL('image/png');
+    resultMessage.textContent = "Gambar berhasil diambil. Klik pada angka untuk OCR.";
+    resultMessage.style.color = "green";
+  });
+
+  // Klik gambar untuk scan angka
+  img.addEventListener('click', (e) => {
+    if (!img.src) return;
+
+    const rect = img.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const x = (e.clientX - rect.left) * scaleX;
+    const y = (e.clientY - rect.top) * scaleY;
+
+    const cropSize = 150; // Ukuran kotak OCR
+    const cropX = Math.max(0, x - cropSize / 2);
+    const cropY = Math.max(0, y - cropSize / 2);
+    const ctx = canvas.getContext('2d');
+
+    const imageData = ctx.getImageData(cropX, cropY, cropSize, cropSize);
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = cropSize;
+    tempCanvas.height = cropSize;
+    tempCanvas.getContext('2d').putImageData(imageData, 0, 0);
+
+    resultMessage.textContent = "Memproses angka...";
+    resultMessage.style.color = "black";
+
+    tempCanvas.toBlob(blob => {
+      Tesseract.recognize(blob, 'eng', {
+        logger: m => {}
+      }).then(({ data: { text } }) => {
+        const angkaStr = text.replace(/\D/g, '');
+        if (angkaStr.length === 0) {
+          resultMessage.textContent = "Tidak ada angka terdeteksi.";
+          resultMessage.style.color = "red";
+        } else {
+          const angka = parseInt(angkaStr, 10);
+          scanResults.push(angka);
+          updateTable();
+          resultMessage.textContent = "Berhasil scan: " + formatRibuan(angka);
+          resultMessage.style.color = "green";
+        }
+      }).catch(err => {
+        resultMessage.textContent = "Gagal membaca angka: " + err;
+        resultMessage.style.color = "red";
+      });
+    });
+  });
 
   function updateTable() {
     scanListBody.innerHTML = '';
     scanResults.forEach((num, i) => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
+      const row = document.createElement('tr');
+      row.innerHTML = `
         <td>${i + 1}</td>
         <td>${formatRibuan(num)}</td>
         <td><button class="delete-btn" data-index="${i}">Hapus</button></td>
       `;
-      scanListBody.appendChild(tr);
+      scanListBody.appendChild(row);
     });
 
     const total = scanResults.reduce((acc, val) => acc + val, 0);
     totalValueCell.textContent = formatRibuan(total);
   }
 
-  scanListBody.addEventListener('click', (e) => {
-    if(e.target.classList.contains('delete-btn')) {
+  // Hapus angka
+  scanListBody.addEventListener('click', e => {
+    if (e.target.classList.contains('delete-btn')) {
       const index = parseInt(e.target.getAttribute('data-index'));
-      if(!isNaN(index)) {
-        scanResults.splice(index, 1);
-        updateTable();
-        resultMessage.textContent = 'Data berhasil dihapus.';
-        resultMessage.style.color = 'green';
-      }
+      scanResults.splice(index, 1);
+      updateTable();
+      resultMessage.textContent = "Data berhasil dihapus.";
+      resultMessage.style.color = "green";
     }
-  });
-
-  async function recognizeWithRotation(blob) {
-    const angles = [0, 90, 180, 270];
-    for (let angle of angles) {
-      const img = await createImageBitmap(blob);
-      const tmpCanvas = document.createElement('canvas');
-      const ctx = tmpCanvas.getContext('2d');
-
-      if (angle === 90 || angle === 270) {
-        tmpCanvas.width = img.height;
-        tmpCanvas.height = img.width;
-      } else {
-        tmpCanvas.width = img.width;
-        tmpCanvas.height = img.height;
-      }
-
-      ctx.translate(tmpCanvas.width / 2, tmpCanvas.height / 2);
-      ctx.rotate((angle * Math.PI) / 180);
-      ctx.drawImage(img, -img.width / 2, -img.height / 2);
-
-      const rotatedBlob = await new Promise(resolve => tmpCanvas.toBlob(resolve));
-      const result = await Tesseract.recognize(rotatedBlob, 'eng');
-      const angkaStr = result.data.text.replace(/\D/g, '');
-      if (angkaStr.length > 0) {
-        return parseInt(angkaStr, 10);
-      }
-    }
-    return null;
-  }
-
-  scanBtn.addEventListener('click', async () => {
-    resultMessage.style.color = 'black';
-    resultMessage.textContent = 'Memproses gambar...';
-    scanBtn.disabled = true;
-
-    const videoRect = video.getBoundingClientRect();
-    const focusBox = document.getElementById('focus-box');
-    const focusRect = focusBox.getBoundingClientRect();
-
-    const scaleX = video.videoWidth / videoRect.width;
-    const scaleY = video.videoHeight / videoRect.height;
-
-    const cropX = (focusRect.left - videoRect.left) * scaleX;
-    const cropY = (focusRect.top - videoRect.top) * scaleY;
-    const cropWidth = focusRect.width * scaleX;
-    const cropHeight = focusRect.height * scaleY;
-
-    const ctx = canvas.getContext('2d');
-    canvas.width = cropWidth;
-    canvas.height = cropHeight;
-    ctx.drawImage(video, cropX, cropY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
-
-    canvas.toBlob(async blob => {
-      try {
-        const angka = await recognizeWithRotation(blob);
-        if (angka !== null) {
-          scanResults.push(angka);
-          updateTable();
-          resultMessage.style.color = 'green';
-          resultMessage.textContent = `Berhasil scan angka: ${formatRibuan(angka)}`;
-        } else {
-          resultMessage.style.color = 'red';
-          resultMessage.textContent = 'Tidak ada angka terdeteksi. Coba ulangi.';
-        }
-      } catch (err) {
-        resultMessage.style.color = 'red';
-        resultMessage.textContent = 'Gagal membaca gambar: ' + err;
-      }
-      scanBtn.disabled = false;
-    });
   });
 </script>
 
