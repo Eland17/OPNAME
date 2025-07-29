@@ -10,11 +10,10 @@
       max-width: 800px;
       margin: auto;
       padding: 10px;
-      display: flex;
-      gap: 20px;
+      /* hapus flex, jadi default block layout */
     }
     #mainSection {
-      flex: 2;
+      /* block, penuh lebar */
     }
     table {
       border-collapse: collapse;
@@ -39,10 +38,10 @@
       text-align: right;
     }
     #saveNewSection {
-      margin-top:15px;
-      display:flex;
-      gap:8px;
-      align-items:center;
+      margin-top: 15px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
     }
     #saveName {
       padding: 6px;
@@ -65,10 +64,10 @@
       cursor: not-allowed;
     }
     #listSection {
-      flex: 1;
+      margin-top: 20px;
       border: 1px solid #ccc;
       padding: 8px;
-      max-height: 450px;
+      max-height: 300px;
       overflow-y: auto;
       background: #f9f9f9;
       border-radius: 6px;
@@ -86,31 +85,31 @@
     ul#storageList li {
       background: white;
       margin-bottom: 8px;
-      padding: 6px 8px;
+      padding: 6px 10px;
       border-radius: 4px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       cursor: pointer;
-      box-shadow: 0 0 3px rgba(0,0,0,0.1);
-      font-size: 14px;
+      box-shadow: 0 0 3px rgba(0, 0, 0, 0.1);
+      font-size: 11px;
     }
     ul#storageList li:hover {
       background: #e0f0ff;
+    }
+    ul#storageList li span.nameItem {
+      flex: 1;
+      user-select: none;
+      font-size: 11px;
     }
     ul#storageList li button.deleteBtn {
       background: #dc3545;
       border: none;
       color: white;
       border-radius: 4px;
-      font-size: 12px;
-      padding: 3px 7px;
+      font-size: 10px;
+      padding: 2px 5px;
       cursor: pointer;
-    }
-    ul#storageList li span.nameItem {
-      flex: 1;
-      user-select: none;
-      font-size: 14px;
     }
   </style>
 </head>
@@ -148,6 +147,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
 <script>
+  // Kode JavaScript tetap sama seperti sebelumnya, tidak berubah
   const firebaseConfig = {
     apiKey: "AIzaSyACOluEhfPw4JBlBaHyXtf1k3TIJAHikKo",
     authDomain: "inventory-gudang-16dfe.firebaseapp.com",
@@ -171,7 +171,7 @@
 
   function buatBaris() {
     tbody.innerHTML = '';
-    for(let i=1; i<=10; i++) {
+    for (let i = 1; i <= 10; i++) {
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>${i}</td>
@@ -197,8 +197,8 @@
     let sum = 0;
     inputs.forEach(input => {
       let val = parseInt(input.value);
-      if(isNaN(val) || val < 0) val = 0;
-      if(val > 0) count++;
+      if (isNaN(val) || val < 0) val = 0;
+      if (val > 0) count++;
       sum += val;
     });
     hasilCountEl.textContent = count;
@@ -268,7 +268,7 @@
         delBtn.title = 'Hapus data simpanan ini';
         delBtn.addEventListener('click', (e) => {
           e.stopPropagation();
-          if(confirm('Yakin ingin menghapus data "' + key + '" ?')) {
+          if (confirm('Yakin ingin menghapus data "' + key + '" ?')) {
             deleteData(key);
           }
         });
