@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <title>Stok Opname OCR Kamera</title>
+  <title>Stok Opname OCR Kamera dengan Hapus</title>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.0.2/dist/tesseract.min.js"></script>
   <style>
     body {
@@ -41,6 +41,14 @@
       background-color: #888;
       cursor: not-allowed;
     }
+    .delete-btn {
+      background-color: #dc3545;
+      padding: 4px 8px;
+      border: none;
+      border-radius: 4px;
+      color: white;
+      cursor: pointer;
+    }
     #resultMessage {
       margin-top: 10px;
       min-height: 24px;
@@ -52,7 +60,7 @@
 </head>
 <body>
 
-<h2>Stok Opname dengan OCR Kamera</h2>
+<h2>Stok Opname dengan OCR Kamera + Hapus Data</h2>
 
 <video id="video" autoplay></video>
 <button id="scanBtn">Scan Angka</button>
@@ -60,15 +68,14 @@
 
 <table>
   <thead>
-    <tr><th>No</th><th>Angka Hasil Scan</th></tr>
+    <tr><th>No</th><th>Angka Hasil Scan</th><th>Aksi</th></tr>
   </thead>
   <tbody id="scanListBody"></tbody>
   <tfoot>
-    <tr><td><b>Total</b></td><td id="totalValue">0</td></tr>
+    <tr><td><b>Total</b></td><td id="totalValue">0</td><td></td></tr>
   </tfoot>
 </table>
 
-<!-- canvas tersembunyi untuk snapshot video -->
 <canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
 
 <script>
@@ -81,7 +88,6 @@
 
   let scanResults = [];
 
-  // Aktifkan kamera
   navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
     .then(stream => {
       video.srcObject = stream;
@@ -94,13 +100,29 @@
     scanListBody.innerHTML = '';
     scanResults.forEach((num, i) => {
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${i + 1}</td><td>${num}</td>`;
+      tr.innerHTML = `
+        <td>${i + 1}</td>
+        <td>${num}</td>
+        <td><button class="delete-btn" data-index="${i}">Hapus</button></td>
+      `;
       scanListBody.appendChild(tr);
     });
 
     const total = scanResults.reduce((acc, val) => acc + val, 0);
     totalValueCell.textContent = total;
   }
+
+  scanListBody.addEventListener('click', (e) => {
+    if(e.target.classList.contains('delete-btn')) {
+      const index = parseInt(e.target.getAttribute('data-index'));
+      if(!isNaN(index)) {
+        scanResults.splice(index, 1);
+        updateTable();
+        resultMessage.textContent = 'Data berhasil dihapus.';
+        resultMessage.style.color = 'green';
+      }
+    }
+  });
 
   scanBtn.addEventListener('click', () => {
     resultMessage.style.color = 'black';
@@ -115,11 +137,9 @@
     canvas.toBlob(blob => {
       Tesseract.recognize(blob, 'eng', {
         logger: m => {
-          // opsional tampilkan progres
           // console.log(m);
         }
       }).then(({ data: { text } }) => {
-        // ambil hanya angka dari teks hasil OCR
         const angkaStr = text.replace(/\D/g, '');
         if(angkaStr.length === 0) {
           resultMessage.style.color = 'red';
