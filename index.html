@@ -1,73 +1,97 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <title>Stok Opname - Capture & Rotasi Gambar + Klik OCR</title>
-  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.0.2/dist/tesseract.min.js"></script>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      padding: 20px;
-      max-width: 500px;
-      margin: auto;
-    }
-    video, canvas, img {
-      width: 100%;
-      max-width: 100%;
-      margin-top: 10px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-    }
-    button {
-      margin-top: 10px;
-      padding: 10px;
-      width: 100%;
-      font-size: 16px;
-      cursor: pointer;
-      background-color: #007bff;
-      border: none;
-      color: white;
-      border-radius: 5px;
-    }
-    #rotateBtn {
-      background-color: #28a745;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 15px;
-    }
-    th, td {
-      border: 1px solid #aaa;
-      padding: 6px;
-      text-align: center;
-    }
-    .delete-btn {
-      background-color: #dc3545;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      padding: 4px 8px;
-      cursor: pointer;
-    }
-    #resultMessage {
-      margin-top: 10px;
-      font-weight: bold;
-      text-align: center;
-      min-height: 20px;
-    }
-  </style>
+<meta charset="UTF-8" />
+<title>Stok Opname - Capture, Pilih Area, Putar Manual, OCR</title>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.0.2/dist/tesseract.min.js"></script>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    padding: 20px;
+    max-width: 520px;
+    margin: auto;
+  }
+  video, img, canvas {
+    width: 100%;
+    max-width: 100%;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    margin-top: 10px;
+  }
+  button {
+    margin-top: 10px;
+    padding: 10px;
+    width: 100%;
+    font-size: 16px;
+    cursor: pointer;
+    background-color: #007bff;
+    border: none;
+    color: white;
+    border-radius: 5px;
+  }
+  #rotateCropBtn, #scanCropBtn {
+    width: 48%;
+    display: inline-block;
+    margin-top: 10px;
+  }
+  #rotateCropBtn {
+    background-color: #28a745;
+  }
+  #scanCropBtn {
+    background-color: #17a2b8;
+  }
+  #cropPreviewContainer {
+    margin-top: 10px;
+    position: relative;
+    text-align: center;
+  }
+  #cropPreview {
+    border: 1px solid #555;
+    max-width: 150px;
+    max-height: 150px;
+    display: block;
+    margin: auto;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+  }
+  th, td {
+    border: 1px solid #aaa;
+    padding: 6px;
+    text-align: center;
+  }
+  .delete-btn {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 4px 8px;
+    cursor: pointer;
+  }
+  #resultMessage {
+    margin-top: 10px;
+    font-weight: bold;
+    text-align: center;
+    min-height: 20px;
+  }
+</style>
 </head>
 <body>
 
-<h2>Stok Opname - Capture & Rotasi Gambar + Klik OCR</h2>
+<h2>Stok Opname - Capture, Pilih Area, Putar Manual, OCR</h2>
 
 <video id="video" autoplay></video>
 <button id="captureBtn">Capture Gambar</button>
 <img id="capturedImg" alt="Gambar Hasil Capture" />
-<button id="rotateBtn">Putar 90°</button>
 
-<p>Klik di gambar hasil capture pada bagian angka untuk proses OCR.</p>
+<div id="cropPreviewContainer" style="display:none;">
+  <p>Preview Area Crop (Klik rotate dan scan setelah pas)</p>
+  <canvas id="cropPreview"></canvas>
+  <button id="rotateCropBtn">Putar 90°</button>
+  <button id="scanCropBtn">Scan Angka</button>
+</div>
 
 <div id="resultMessage"></div>
 
@@ -81,152 +105,170 @@
   </tfoot>
 </table>
 
-<!-- Canvas untuk proses gambar, disembunyikan -->
-<canvas id="canvas" style="display:none;"></canvas>
+<canvas id="hiddenCanvas" style="display:none;"></canvas>
 
 <script>
   const video = document.getElementById('video');
-  const canvas = document.getElementById('canvas');
-  const img = document.getElementById('capturedImg');
   const captureBtn = document.getElementById('captureBtn');
-  const rotateBtn = document.getElementById('rotateBtn');
+  const capturedImg = document.getElementById('capturedImg');
+  const cropPreviewContainer = document.getElementById('cropPreviewContainer');
+  const cropPreview = document.getElementById('cropPreview');
+  const rotateCropBtn = document.getElementById('rotateCropBtn');
+  const scanCropBtn = document.getElementById('scanCropBtn');
   const resultMessage = document.getElementById('resultMessage');
   const scanListBody = document.getElementById('scanListBody');
   const totalValueCell = document.getElementById('totalValue');
+  const hiddenCanvas = document.getElementById('hiddenCanvas');
 
-  let scanResults = [];
   let rotationAngle = 0;
+  let capturedImageObj = null; // Image object from capture
+  let cropRect = null; // Area crop {x, y, width, height}
+  let scanResults = [];
 
-  function formatRibuan(x) {
-    return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-  }
-
-  // Akses kamera
+  // Setup camera
   navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-    .then(stream => {
-      video.srcObject = stream;
-    })
-    .catch(err => {
-      alert("Tidak bisa akses kamera: " + err);
-    });
+  .then(stream => {
+    video.srcObject = stream;
+  })
+  .catch(err => alert("Tidak bisa akses kamera: " + err));
 
-  function drawRotatedImage() {
-    const ctx = canvas.getContext('2d');
-    const width = video.videoWidth;
-    const height = video.videoHeight;
+  // Capture frame from video
+  captureBtn.addEventListener('click', () => {
+    const w = video.videoWidth;
+    const h = video.videoHeight;
+    hiddenCanvas.width = w;
+    hiddenCanvas.height = h;
+    const ctx = hiddenCanvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, w, h);
+    const dataURL = hiddenCanvas.toDataURL('image/png');
 
-    if (rotationAngle % 180 === 0) {
-      canvas.width = width;
-      canvas.height = height;
-    } else {
-      canvas.width = height;
-      canvas.height = width;
-    }
+    // Load image to img element
+    capturedImg.src = dataURL;
+    rotationAngle = 0;
+    cropRect = null;
+    cropPreviewContainer.style.display = "none";
+    resultMessage.textContent = "Gambar berhasil di-capture. Klik area angka di gambar.";
+    resultMessage.style.color = "green";
+
+    // Create Image object for processing
+    capturedImageObj = new Image();
+    capturedImageObj.src = dataURL;
+  });
+
+  // Klik di gambar hasil capture => buat crop area
+  capturedImg.addEventListener('click', (e) => {
+    if (!capturedImageObj) return;
+
+    const rect = capturedImg.getBoundingClientRect();
+    const scaleX = capturedImageObj.width / rect.width;
+    const scaleY = capturedImageObj.height / rect.height;
+
+    const clickX = (e.clientX - rect.left) * scaleX;
+    const clickY = (e.clientY - rect.top) * scaleY;
+
+    const cropSize = 150; // ukuran crop kotak
+    const x = Math.max(0, Math.min(clickX - cropSize/2, capturedImageObj.width - cropSize));
+    const y = Math.max(0, Math.min(clickY - cropSize/2, capturedImageObj.height - cropSize));
+
+    cropRect = { x, y, width: cropSize, height: cropSize };
+    rotationAngle = 0; // reset rotasi saat area baru dipilih
+
+    drawCropPreview();
+
+    cropPreviewContainer.style.display = "block";
+    resultMessage.textContent = "Area crop dipilih, bisa putar dan scan.";
+  });
+
+  function drawCropPreview() {
+    if (!cropRect || !capturedImageObj) return;
+
+    const ctx = cropPreview.getContext('2d');
+    const w = cropRect.width;
+    const h = cropRect.height;
+
+    // canvas disesuaikan ukuran crop
+    cropPreview.width = w;
+    cropPreview.height = h;
+
+    ctx.clearRect(0, 0, w, h);
 
     ctx.save();
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    ctx.translate(canvas.width / 2, canvas.height / 2);
+    // rotasi di tengah canvas crop
+    ctx.translate(w/2, h/2);
     ctx.rotate(rotationAngle * Math.PI / 180);
+    ctx.translate(-w/2, -h/2);
 
-    ctx.drawImage(video, -width / 2, -height / 2);
+    // gambar crop dari captured image
+    ctx.drawImage(
+      capturedImageObj,
+      cropRect.x, cropRect.y, w, h, // crop source
+      0, 0, w, h                    // canvas dest
+    );
     ctx.restore();
-
-    img.src = canvas.toDataURL('image/png');
-    resultMessage.textContent = "Gambar diputar " + rotationAngle + "°.";
   }
 
-  captureBtn.addEventListener('click', () => {
-    rotationAngle = 0; // reset rotasi saat capture baru
-    drawRotatedImage();
-    resultMessage.textContent = "Gambar berhasil diambil. Klik angka untuk OCR.";
-    resultMessage.style.color = "green";
-  });
-
-  rotateBtn.addEventListener('click', () => {
+  rotateCropBtn.addEventListener('click', () => {
+    if (!cropRect) return;
     rotationAngle = (rotationAngle + 90) % 360;
-    drawRotatedImage();
+    drawCropPreview();
+    resultMessage.textContent = "Area crop diputar " + rotationAngle + "°.";
   });
 
-  img.addEventListener('click', (e) => {
-    if (!img.src) return;
-
-    const rect = img.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    let x = (e.clientX - rect.left) * scaleX;
-    let y = (e.clientY - rect.top) * scaleY;
-
-    // Hitung titik balik rotasi (rotasi balik koordinat klik)
-    const angle = (360 - rotationAngle) % 360;
-    const cx = canvas.width / 2;
-    const cy = canvas.height / 2;
-
-    const dx = x - cx;
-    const dy = y - cy;
-    const rad = angle * Math.PI / 180;
-
-    x = cx + dx * Math.cos(rad) - dy * Math.sin(rad);
-    y = cy + dx * Math.sin(rad) + dy * Math.cos(rad);
-
-    const cropSize = 150;
-    const cropX = Math.max(0, x - cropSize / 2);
-    const cropY = Math.max(0, y - cropSize / 2);
-    const ctx = canvas.getContext('2d');
-    const imageData = ctx.getImageData(cropX, cropY, cropSize, cropSize);
-    const tempCanvas = document.createElement('canvas');
-    tempCanvas.width = cropSize;
-    tempCanvas.height = cropSize;
-    tempCanvas.getContext('2d').putImageData(imageData, 0, 0);
-
-    resultMessage.textContent = "Memproses angka...";
+  scanCropBtn.addEventListener('click', () => {
+    if (!cropRect) return;
+    resultMessage.textContent = "Memproses OCR...";
     resultMessage.style.color = "black";
 
-    tempCanvas.toBlob(blob => {
+    cropPreview.toBlob(blob => {
       Tesseract.recognize(blob, 'eng').then(({ data: { text } }) => {
         const angkaStr = text.replace(/\D/g, '');
-        if (angkaStr.length === 0) {
+        if (!angkaStr) {
           resultMessage.textContent = "Tidak ada angka terdeteksi.";
           resultMessage.style.color = "red";
-        } else {
-          const angka = parseInt(angkaStr, 10);
-          scanResults.push(angka);
-          updateTable();
-          resultMessage.textContent = "Berhasil scan: " + formatRibuan(angka);
-          resultMessage.style.color = "green";
+          return;
         }
+        const angka = parseInt(angkaStr, 10);
+        scanResults.push(angka);
+        updateTable();
+        resultMessage.textContent = "Berhasil scan angka: " + formatRibuan(angka);
+        resultMessage.style.color = "green";
       }).catch(err => {
-        resultMessage.textContent = "Gagal membaca angka: " + err;
+        resultMessage.textContent = "Gagal OCR: " + err;
         resultMessage.style.color = "red";
       });
     });
   });
 
   function updateTable() {
-    scanListBody.innerHTML = '';
+    scanListBody.innerHTML = "";
     scanResults.forEach((num, i) => {
-      const row = document.createElement('tr');
+      const row = document.createElement("tr");
       row.innerHTML = `
-        <td>${i + 1}</td>
+        <td>${i+1}</td>
         <td>${formatRibuan(num)}</td>
         <td><button class="delete-btn" data-index="${i}">Hapus</button></td>
       `;
       scanListBody.appendChild(row);
     });
-
     const total = scanResults.reduce((acc, val) => acc + val, 0);
     totalValueCell.textContent = formatRibuan(total);
   }
 
-  scanListBody.addEventListener('click', e => {
-    if (e.target.classList.contains('delete-btn')) {
-      const index = parseInt(e.target.getAttribute('data-index'));
-      scanResults.splice(index, 1);
-      updateTable();
-      resultMessage.textContent = "Data berhasil dihapus.";
-      resultMessage.style.color = "green";
+  scanListBody.addEventListener("click", e => {
+    if (e.target.classList.contains("delete-btn")) {
+      const idx = parseInt(e.target.getAttribute("data-index"));
+      if (!isNaN(idx)) {
+        scanResults.splice(idx, 1);
+        updateTable();
+        resultMessage.textContent = "Data berhasil dihapus.";
+        resultMessage.style.color = "green";
+      }
     }
   });
+
+  function formatRibuan(x) {
+    return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  }
 </script>
 
 </body>
