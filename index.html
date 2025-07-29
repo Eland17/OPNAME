@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <title>Stok Opname OCR Kamera dengan Fokus</title>
+  <title>Stok Opname OCR Kamera dengan Fokus dan Format Ribuan</title>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.0.2/dist/tesseract.min.js"></script>
   <style>
     body {
@@ -23,20 +23,19 @@
       border: 1px solid #ccc;
       display: block;
     }
-    /* Kotak fokus di tengah video */
     #focus-box {
       position: absolute;
       top: 50%;
       left: 50%;
       width: 180px;
       height: 100px;
-      margin-left: -90px; /* setengah width */
-      margin-top: -50px;  /* setengah height */
+      margin-left: -90px;
+      margin-top: -50px;
       border: 3px solid #00ff00;
       border-radius: 8px;
       box-sizing: border-box;
-      pointer-events: none; /* supaya tidak mengganggu klik */
-      mix-blend-mode: difference; /* biar kontras */
+      pointer-events: none;
+      mix-blend-mode: difference;
     }
     button {
       margin-top: 10px;
@@ -82,7 +81,7 @@
 </head>
 <body>
 
-<h2>Stok Opname dengan OCR Kamera + Fokus</h2>
+<h2>Stok Opname dengan OCR Kamera + Fokus + Format Ribuan</h2>
 
 <div class="video-container">
   <video id="video" autoplay></video>
@@ -111,11 +110,13 @@
   const scanListBody = document.getElementById('scanListBody');
   const totalValueCell = document.getElementById('totalValue');
   const resultMessage = document.getElementById('resultMessage');
-  const focusBox = document.getElementById('focus-box');
 
   let scanResults = [];
 
-  // Kamera dengan facingMode environment (kamera belakang hp)
+  function formatRibuan(x) {
+    return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  }
+
   navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
     .then(stream => {
       video.srcObject = stream;
@@ -130,14 +131,14 @@
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>${i + 1}</td>
-        <td>${num}</td>
+        <td>${formatRibuan(num)}</td>
         <td><button class="delete-btn" data-index="${i}">Hapus</button></td>
       `;
       scanListBody.appendChild(tr);
     });
 
     const total = scanResults.reduce((acc, val) => acc + val, 0);
-    totalValueCell.textContent = total;
+    totalValueCell.textContent = formatRibuan(total);
   }
 
   scanListBody.addEventListener('click', (e) => {
@@ -157,8 +158,8 @@
     resultMessage.textContent = 'Memproses gambar...';
     scanBtn.disabled = true;
 
-    // Ambil area fokus dari kotak fokus (crop image area yang di-scan)
     const videoRect = video.getBoundingClientRect();
+    const focusBox = document.getElementById('focus-box');
     const focusRect = focusBox.getBoundingClientRect();
 
     const scaleX = video.videoWidth / videoRect.width;
@@ -178,7 +179,7 @@
     canvas.toBlob(blob => {
       Tesseract.recognize(blob, 'eng', {
         logger: m => {
-          //console.log(m);
+          // console.log(m);
         }
       }).then(({ data: { text } }) => {
         const angkaStr = text.replace(/\D/g, '');
@@ -190,7 +191,7 @@
           scanResults.push(angka);
           updateTable();
           resultMessage.style.color = 'green';
-          resultMessage.textContent = `Berhasil scan angka: ${angka}`;
+          resultMessage.textContent = `Berhasil scan angka: ${formatRibuan(angka)}`;
         }
         scanBtn.disabled = false;
       }).catch(err => {
@@ -204,4 +205,3 @@
 
 </body>
 </html>
-
