@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <title>Stok Opname OCR Kamera dengan Hapus</title>
+  <title>Stok Opname OCR Kamera dengan Fokus</title>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.0.2/dist/tesseract.min.js"></script>
   <style>
     body {
@@ -11,20 +11,32 @@
       max-width: 400px;
       margin: auto;
     }
+    .video-container {
+      position: relative;
+      width: 100%;
+      max-width: 400px;
+      margin: auto;
+    }
     #video {
       width: 100%;
-      border: 1px solid #ccc;
       border-radius: 5px;
+      border: 1px solid #ccc;
+      display: block;
     }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 15px;
-    }
-    th, td {
-      border: 1px solid #aaa;
-      padding: 6px;
-      text-align: center;
+    /* Kotak fokus di tengah video */
+    #focus-box {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 180px;
+      height: 100px;
+      margin-left: -90px; /* setengah width */
+      margin-top: -50px;  /* setengah height */
+      border: 3px solid #00ff00;
+      border-radius: 8px;
+      box-sizing: border-box;
+      pointer-events: none; /* supaya tidak mengganggu klik */
+      mix-blend-mode: difference; /* biar kontras */
     }
     button {
       margin-top: 10px;
@@ -40,6 +52,16 @@
     button:disabled {
       background-color: #888;
       cursor: not-allowed;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+    th, td {
+      border: 1px solid #aaa;
+      padding: 6px;
+      text-align: center;
     }
     .delete-btn {
       background-color: #dc3545;
@@ -60,9 +82,13 @@
 </head>
 <body>
 
-<h2>Stok Opname dengan OCR Kamera + Hapus Data</h2>
+<h2>Stok Opname dengan OCR Kamera + Fokus</h2>
 
-<video id="video" autoplay></video>
+<div class="video-container">
+  <video id="video" autoplay></video>
+  <div id="focus-box"></div>
+</div>
+
 <button id="scanBtn">Scan Angka</button>
 <div id="resultMessage"></div>
 
@@ -76,7 +102,7 @@
   </tfoot>
 </table>
 
-<canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
+<canvas id="canvas" style="display:none;"></canvas>
 
 <script>
   const video = document.getElementById('video');
@@ -85,9 +111,11 @@
   const scanListBody = document.getElementById('scanListBody');
   const totalValueCell = document.getElementById('totalValue');
   const resultMessage = document.getElementById('resultMessage');
+  const focusBox = document.getElementById('focus-box');
 
   let scanResults = [];
 
+  // Kamera dengan facingMode environment (kamera belakang hp)
   navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
     .then(stream => {
       video.srcObject = stream;
@@ -129,15 +157,28 @@
     resultMessage.textContent = 'Memproses gambar...';
     scanBtn.disabled = true;
 
+    // Ambil area fokus dari kotak fokus (crop image area yang di-scan)
+    const videoRect = video.getBoundingClientRect();
+    const focusRect = focusBox.getBoundingClientRect();
+
+    const scaleX = video.videoWidth / videoRect.width;
+    const scaleY = video.videoHeight / videoRect.height;
+
+    const cropX = (focusRect.left - videoRect.left) * scaleX;
+    const cropY = (focusRect.top - videoRect.top) * scaleY;
+    const cropWidth = focusRect.width * scaleX;
+    const cropHeight = focusRect.height * scaleY;
+
     const ctx = canvas.getContext('2d');
-    canvas.width = video.videoWidth || 320;
-    canvas.height = video.videoHeight || 240;
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    canvas.width = cropWidth;
+    canvas.height = cropHeight;
+
+    ctx.drawImage(video, cropX, cropY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
 
     canvas.toBlob(blob => {
       Tesseract.recognize(blob, 'eng', {
         logger: m => {
-          // console.log(m);
+          //console.log(m);
         }
       }).then(({ data: { text } }) => {
         const angkaStr = text.replace(/\D/g, '');
@@ -163,3 +204,4 @@
 
 </body>
 </html>
+
