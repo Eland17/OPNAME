@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <title>Stok Opname - Klik Angka dari Gambar</title>
+  <meta charset="UTF-8" />
+  <title>Stok Opname - Capture & Rotasi Gambar + Klik OCR</title>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.0.2/dist/tesseract.min.js"></script>
   <style>
     body {
@@ -28,6 +28,9 @@
       border: none;
       color: white;
       border-radius: 5px;
+    }
+    #rotateBtn {
+      background-color: #28a745;
     }
     table {
       width: 100%;
@@ -57,12 +60,12 @@
 </head>
 <body>
 
-<h2>Stok Opname - Klik Angka dari Gambar</h2>
+<h2>Stok Opname - Capture & Rotasi Gambar + Klik OCR</h2>
 
 <video id="video" autoplay></video>
 <button id="captureBtn">Capture Gambar</button>
-<canvas id="canvas" style="display:none;"></canvas>
 <img id="capturedImg" alt="Gambar Hasil Capture" />
+<button id="rotateBtn">Putar 90°</button>
 
 <p>Klik di gambar hasil capture pada bagian angka untuk proses OCR.</p>
 
@@ -78,16 +81,21 @@
   </tfoot>
 </table>
 
+<!-- Canvas untuk proses gambar, disembunyikan -->
+<canvas id="canvas" style="display:none;"></canvas>
+
 <script>
   const video = document.getElementById('video');
   const canvas = document.getElementById('canvas');
   const img = document.getElementById('capturedImg');
   const captureBtn = document.getElementById('captureBtn');
+  const rotateBtn = document.getElementById('rotateBtn');
   const resultMessage = document.getElementById('resultMessage');
   const scanListBody = document.getElementById('scanListBody');
   const totalValueCell = document.getElementById('totalValue');
 
   let scanResults = [];
+  let rotationAngle = 0;
 
   function formatRibuan(x) {
     return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
@@ -102,32 +110,69 @@
       alert("Tidak bisa akses kamera: " + err);
     });
 
-  // Capture dari video
-  captureBtn.addEventListener('click', () => {
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+  function drawRotatedImage() {
     const ctx = canvas.getContext('2d');
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const width = video.videoWidth;
+    const height = video.videoHeight;
+
+    if (rotationAngle % 180 === 0) {
+      canvas.width = width;
+      canvas.height = height;
+    } else {
+      canvas.width = height;
+      canvas.height = width;
+    }
+
+    ctx.save();
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    ctx.translate(canvas.width / 2, canvas.height / 2);
+    ctx.rotate(rotationAngle * Math.PI / 180);
+
+    ctx.drawImage(video, -width / 2, -height / 2);
+    ctx.restore();
+
     img.src = canvas.toDataURL('image/png');
-    resultMessage.textContent = "Gambar berhasil diambil. Klik pada angka untuk OCR.";
+    resultMessage.textContent = "Gambar diputar " + rotationAngle + "°.";
+  }
+
+  captureBtn.addEventListener('click', () => {
+    rotationAngle = 0; // reset rotasi saat capture baru
+    drawRotatedImage();
+    resultMessage.textContent = "Gambar berhasil diambil. Klik angka untuk OCR.";
     resultMessage.style.color = "green";
   });
 
-  // Klik gambar untuk scan angka
+  rotateBtn.addEventListener('click', () => {
+    rotationAngle = (rotationAngle + 90) % 360;
+    drawRotatedImage();
+  });
+
   img.addEventListener('click', (e) => {
     if (!img.src) return;
 
     const rect = img.getBoundingClientRect();
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
-    const x = (e.clientX - rect.left) * scaleX;
-    const y = (e.clientY - rect.top) * scaleY;
+    let x = (e.clientX - rect.left) * scaleX;
+    let y = (e.clientY - rect.top) * scaleY;
 
-    const cropSize = 150; // Ukuran kotak OCR
+    // Hitung titik balik rotasi (rotasi balik koordinat klik)
+    const angle = (360 - rotationAngle) % 360;
+    const cx = canvas.width / 2;
+    const cy = canvas.height / 2;
+
+    const dx = x - cx;
+    const dy = y - cy;
+    const rad = angle * Math.PI / 180;
+
+    x = cx + dx * Math.cos(rad) - dy * Math.sin(rad);
+    y = cy + dx * Math.sin(rad) + dy * Math.cos(rad);
+
+    const cropSize = 150;
     const cropX = Math.max(0, x - cropSize / 2);
     const cropY = Math.max(0, y - cropSize / 2);
     const ctx = canvas.getContext('2d');
-
     const imageData = ctx.getImageData(cropX, cropY, cropSize, cropSize);
     const tempCanvas = document.createElement('canvas');
     tempCanvas.width = cropSize;
@@ -138,9 +183,7 @@
     resultMessage.style.color = "black";
 
     tempCanvas.toBlob(blob => {
-      Tesseract.recognize(blob, 'eng', {
-        logger: m => {}
-      }).then(({ data: { text } }) => {
+      Tesseract.recognize(blob, 'eng').then(({ data: { text } }) => {
         const angkaStr = text.replace(/\D/g, '');
         if (angkaStr.length === 0) {
           resultMessage.textContent = "Tidak ada angka terdeteksi.";
@@ -175,7 +218,6 @@
     totalValueCell.textContent = formatRibuan(total);
   }
 
-  // Hapus angka
   scanListBody.addEventListener('click', e => {
     if (e.target.classList.contains('delete-btn')) {
       const index = parseInt(e.target.getAttribute('data-index'));
