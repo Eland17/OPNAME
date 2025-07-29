@@ -81,7 +81,7 @@
 </head>
 <body>
 
-<h2>Stok Opname dengan OCR Kamera + Fokus + Format Ribuan</h2>
+<h2>Stok Opname dengan OCR Kamera</h2>
 
 <div class="video-container">
   <video id="video" autoplay></video>
@@ -153,7 +153,36 @@
     }
   });
 
-  scanBtn.addEventListener('click', () => {
+  async function recognizeWithRotation(blob) {
+    const angles = [0, 90, 180, 270];
+    for (let angle of angles) {
+      const img = await createImageBitmap(blob);
+      const tmpCanvas = document.createElement('canvas');
+      const ctx = tmpCanvas.getContext('2d');
+
+      if (angle === 90 || angle === 270) {
+        tmpCanvas.width = img.height;
+        tmpCanvas.height = img.width;
+      } else {
+        tmpCanvas.width = img.width;
+        tmpCanvas.height = img.height;
+      }
+
+      ctx.translate(tmpCanvas.width / 2, tmpCanvas.height / 2);
+      ctx.rotate((angle * Math.PI) / 180);
+      ctx.drawImage(img, -img.width / 2, -img.height / 2);
+
+      const rotatedBlob = await new Promise(resolve => tmpCanvas.toBlob(resolve));
+      const result = await Tesseract.recognize(rotatedBlob, 'eng');
+      const angkaStr = result.data.text.replace(/\D/g, '');
+      if (angkaStr.length > 0) {
+        return parseInt(angkaStr, 10);
+      }
+    }
+    return null;
+  }
+
+  scanBtn.addEventListener('click', async () => {
     resultMessage.style.color = 'black';
     resultMessage.textContent = 'Memproses gambar...';
     scanBtn.disabled = true;
@@ -173,32 +202,25 @@
     const ctx = canvas.getContext('2d');
     canvas.width = cropWidth;
     canvas.height = cropHeight;
-
     ctx.drawImage(video, cropX, cropY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
 
-    canvas.toBlob(blob => {
-      Tesseract.recognize(blob, 'eng', {
-        logger: m => {
-          // console.log(m);
-        }
-      }).then(({ data: { text } }) => {
-        const angkaStr = text.replace(/\D/g, '');
-        if(angkaStr.length === 0) {
-          resultMessage.style.color = 'red';
-          resultMessage.textContent = 'Tidak ada angka terdeteksi, coba ulangi.';
-        } else {
-          const angka = parseInt(angkaStr, 10);
+    canvas.toBlob(async blob => {
+      try {
+        const angka = await recognizeWithRotation(blob);
+        if (angka !== null) {
           scanResults.push(angka);
           updateTable();
           resultMessage.style.color = 'green';
           resultMessage.textContent = `Berhasil scan angka: ${formatRibuan(angka)}`;
+        } else {
+          resultMessage.style.color = 'red';
+          resultMessage.textContent = 'Tidak ada angka terdeteksi. Coba ulangi.';
         }
-        scanBtn.disabled = false;
-      }).catch(err => {
+      } catch (err) {
         resultMessage.style.color = 'red';
         resultMessage.textContent = 'Gagal membaca gambar: ' + err;
-        scanBtn.disabled = false;
-      });
+      }
+      scanBtn.disabled = false;
     });
   });
 </script>
