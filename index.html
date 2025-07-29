@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <title>Stok Opname OCR Kamera</title>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.0.2/dist/tesseract.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      max-width: 400px;
+      margin: auto;
+    }
+    #video {
+      width: 100%;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+    th, td {
+      border: 1px solid #aaa;
+      padding: 6px;
+      text-align: center;
+    }
+    button {
+      margin-top: 10px;
+      padding: 10px;
+      width: 100%;
+      font-size: 16px;
+      cursor: pointer;
+      background-color: #007bff;
+      border: none;
+      color: white;
+      border-radius: 5px;
+    }
+    button:disabled {
+      background-color: #888;
+      cursor: not-allowed;
+    }
+    #resultMessage {
+      margin-top: 10px;
+      min-height: 24px;
+      font-weight: bold;
+      text-align: center;
+      color: green;
+    }
+  </style>
+</head>
+<body>
+
+<h2>Stok Opname dengan OCR Kamera</h2>
+
+<video id="video" autoplay></video>
+<button id="scanBtn">Scan Angka</button>
+<div id="resultMessage"></div>
+
+<table>
+  <thead>
+    <tr><th>No</th><th>Angka Hasil Scan</th></tr>
+  </thead>
+  <tbody id="scanListBody"></tbody>
+  <tfoot>
+    <tr><td><b>Total</b></td><td id="totalValue">0</td></tr>
+  </tfoot>
+</table>
+
+<!-- canvas tersembunyi untuk snapshot video -->
+<canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
+
+<script>
+  const video = document.getElementById('video');
+  const canvas = document.getElementById('canvas');
+  const scanBtn = document.getElementById('scanBtn');
+  const scanListBody = document.getElementById('scanListBody');
+  const totalValueCell = document.getElementById('totalValue');
+  const resultMessage = document.getElementById('resultMessage');
+
+  let scanResults = [];
+
+  // Aktifkan kamera
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+    .then(stream => {
+      video.srcObject = stream;
+    })
+    .catch(err => {
+      alert('Tidak bisa akses kamera: ' + err);
+    });
+
+  function updateTable() {
+    scanListBody.innerHTML = '';
+    scanResults.forEach((num, i) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${i + 1}</td><td>${num}</td>`;
+      scanListBody.appendChild(tr);
+    });
+
+    const total = scanResults.reduce((acc, val) => acc + val, 0);
+    totalValueCell.textContent = total;
+  }
+
+  scanBtn.addEventListener('click', () => {
+    resultMessage.style.color = 'black';
+    resultMessage.textContent = 'Memproses gambar...';
+    scanBtn.disabled = true;
+
+    const ctx = canvas.getContext('2d');
+    canvas.width = video.videoWidth || 320;
+    canvas.height = video.videoHeight || 240;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    canvas.toBlob(blob => {
+      Tesseract.recognize(blob, 'eng', {
+        logger: m => {
+          // opsional tampilkan progres
+          // console.log(m);
+        }
+      }).then(({ data: { text } }) => {
+        // ambil hanya angka dari teks hasil OCR
+        const angkaStr = text.replace(/\D/g, '');
+        if(angkaStr.length === 0) {
+          resultMessage.style.color = 'red';
+          resultMessage.textContent = 'Tidak ada angka terdeteksi, coba ulangi.';
+        } else {
+          const angka = parseInt(angkaStr, 10);
+          scanResults.push(angka);
+          updateTable();
+          resultMessage.style.color = 'green';
+          resultMessage.textContent = `Berhasil scan angka: ${angka}`;
+        }
+        scanBtn.disabled = false;
+      }).catch(err => {
+        resultMessage.style.color = 'red';
+        resultMessage.textContent = 'Gagal membaca gambar: ' + err;
+        scanBtn.disabled = false;
+      });
+    });
+  });
+</script>
+
+</body>
+</html>
