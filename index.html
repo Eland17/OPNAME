@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Stok Opname Fabric</title>
+<title>Stok Roll dengan Firestore - Perbaikan Nested Array</title>
 <style>
   body {
     font-family: Arial, sans-serif;
@@ -112,39 +112,12 @@
     user-select: none;
     font-size: 14px;
   }
-
-  /* Responsive untuk layar max 600px (mobile) */
-  @media (max-width: 600px) {
-    body {
-      flex-direction: column;
-      padding: 5px;
-    }
-    #mainSection, #listSection {
-      flex: none;
-      width: 100%;
-      margin-bottom: 20px;
-    }
-    table, #results {
-      font-size: 14px;
-    }
-    input[type=number], #saveName {
-      width: 100% !important; /* full lebar input */
-      box-sizing: border-box;
-    }
-    button {
-      width: 100%;
-      font-size: 16px;
-    }
-    ul#storageList li {
-      font-size: 12px;
-    }
-  }
 </style>
 </head>
 <body>
 
 <div id="mainSection">
-  <h2>Stok Opname Fabric</h2>
+  <h2>Stok Roll dengan Firestore (Perbaikan Nested Array)</h2>
 
   <table id="stokTable">
     <tbody>
@@ -154,7 +127,7 @@
 
   <div id="results">
     <div>Qty Roll : <span id="hasilCount">0</span></div>
-    <div>Qty M/Y  : <span id="hasilSum">0</span></div>
+    <div>Qty M/Y: <span id="hasilSum">0</span></div>
   </div>
 
   <div id="saveNewSection">
@@ -244,13 +217,22 @@
 
   async function saveDataNew() {
     const saveName = saveNameInput.value.trim();
-    if(!saveName) return alert('Masukkan nama simpan terlebih dahulu.');
+    if (!saveName) return alert('Masukkan nama simpan terlebih dahulu.');
 
     const data = [];
     const trs = tbody.querySelectorAll('tr');
-    trs.forEach(tr => {
+    trs.forEach((tr, idx) => {
       const values = Array.from(tr.querySelectorAll('input')).map(i => i.value.trim() || '0');
-      data.push(values);
+      data.push({
+        row: idx + 1,
+        cols: {
+          col1: values[0],
+          col2: values[1],
+          col3: values[2],
+          col4: values[3],
+          col5: values[4],
+        }
+      });
     });
 
     try {
@@ -262,7 +244,7 @@
       saveNameInput.value = '';
       updateSaveNewBtnState();
       renderStorageList();
-    } catch(error) {
+    } catch (error) {
       alert('Gagal menyimpan data: ' + error.message);
     }
   }
@@ -300,7 +282,7 @@
         li.appendChild(delBtn);
         storageListUl.appendChild(li);
       });
-    } catch(error) {
+    } catch (error) {
       alert('Gagal memuat daftar simpanan: ' + error.message);
     }
   }
@@ -308,7 +290,7 @@
   async function loadData(key) {
     try {
       const doc = await db.collection('stokRoll').doc(key).get();
-      if(!doc.exists) {
+      if (!doc.exists) {
         alert('Data dengan nama tersebut tidak ditemukan.');
         return;
       }
@@ -317,26 +299,28 @@
       const trs = tbody.querySelectorAll('tr');
       trs.forEach((tr, i) => {
         const inputs = tr.querySelectorAll('input');
-        if(data[i]) {
-          data[i].forEach((val, j) => {
-            if(inputs[j]) inputs[j].value = val;
-          });
+        if (data[i]) {
+          inputs[0].value = data[i].cols.col1 || '0';
+          inputs[1].value = data[i].cols.col2 || '0';
+          inputs[2].value = data[i].cols.col3 || '0';
+          inputs[3].value = data[i].cols.col4 || '0';
+          inputs[4].value = data[i].cols.col5 || '0';
         }
       });
       updateResults();
       alert('Data "' + key + '" berhasil dimuat dan siap diedit.');
-    } catch(error) {
+    } catch (error) {
       alert('Gagal memuat data: ' + error.message);
     }
   }
 
   async function deleteData(key) {
-    if(!confirm('Yakin ingin menghapus data "' + key + '" ?')) return;
+    if (!confirm('Yakin ingin menghapus data "' + key + '" ?')) return;
     try {
       await db.collection('stokRoll').doc(key).delete();
       alert('Data "' + key + '" berhasil dihapus.');
       renderStorageList();
-    } catch(error) {
+    } catch (error) {
       alert('Gagal menghapus data: ' + error.message);
     }
   }
@@ -350,7 +334,7 @@
       const colsPerRow = 5;
 
       let nextIndex = currentIndex + colsPerRow;
-      if(nextIndex >= inputs.length) {
+      if (nextIndex >= inputs.length) {
         nextIndex = currentIndex % colsPerRow;
       }
       inputs[nextIndex].focus();
@@ -359,7 +343,7 @@
 
   saveNameInput.addEventListener('input', updateSaveNewBtnState);
   tbody.addEventListener('input', e => {
-    if(e.target.classList.contains('rollInput')) {
+    if (e.target.classList.contains('rollInput')) {
       updateResults();
     }
   });
