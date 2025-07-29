@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Stok Opname Fabtic</title>
+<title>Stok Roll dengan Firestore</title>
 <style>
   body {
     font-family: Arial, sans-serif;
@@ -13,7 +13,6 @@
     display: flex;
     gap: 20px;
   }
-  /* Bagian tabel */
   #mainSection {
     flex: 2;
   }
@@ -22,7 +21,7 @@
     width: 100%;
     margin-top: 10px;
   }
-  th, td {
+  td {
     border: 1px solid #888;
     padding: 6px;
     text-align: center;
@@ -65,7 +64,6 @@
     background-color: #999;
     cursor: not-allowed;
   }
-  /* List bar simpanan */
   #listSection {
     flex: 1;
     border: 1px solid #ccc;
@@ -119,7 +117,7 @@
 <body>
 
 <div id="mainSection">
-  <h2>Stok Opname Fabric</h2>
+  <h2>Stok Roll dengan Firestore</h2>
 
   <table id="stokTable">
     <tbody>
@@ -145,7 +143,27 @@
   </ul>
 </div>
 
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
 <script>
+  // Konfigurasi Firebase kamu
+  const firebaseConfig = {
+    apiKey: "AIzaSyACOluEhfPw4JBlBaHyXtf1k3TIJAHikKo",
+    authDomain: "inventory-gudang-16dfe.firebaseapp.com",
+    databaseURL: "https://inventory-gudang-16dfe-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "inventory-gudang-16dfe",
+    storageBucket: "inventory-gudang-16dfe.firebasestorage.app",
+    messagingSenderId: "663364522026",
+    appId: "1:663364522026:web:f48fb1ba0331695de83353",
+    measurementId: "G-NM1JKR9W8V"
+  };
+
+  // Initialize Firebase
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
   const tbody = document.querySelector('#stokTable tbody');
   const hasilCountEl = document.getElementById('hasilCount');
   const hasilSumEl = document.getElementById('hasilSum');
@@ -154,8 +172,6 @@
   const saveNewBtn = document.getElementById('saveNewBtn');
 
   const storageListUl = document.getElementById('storageList');
-
-  const STORAGE_KEY = 'stokRollDataList';
 
   function buatBaris() {
     tbody.innerHTML = '';
@@ -199,41 +215,7 @@
     saveNewBtn.disabled = saveName === '' || !hasData;
   }
 
-  function renderStorageList() {
-    storageListUl.innerHTML = '';
-    const dataStr = localStorage.getItem(STORAGE_KEY);
-    if(!dataStr) return;
-    const dataList = JSON.parse(dataStr);
-    Object.keys(dataList).forEach(key => {
-      const li = document.createElement('li');
-      const spanName = document.createElement('span');
-      spanName.textContent = key;
-      spanName.className = 'nameItem';
-      spanName.title = "Klik untuk muat data '" + key + "'";
-      spanName.style.userSelect = 'none';
-
-      spanName.addEventListener('click', () => {
-        loadData(key);
-      });
-
-      const delBtn = document.createElement('button');
-      delBtn.textContent = 'Hapus';
-      delBtn.className = 'deleteBtn';
-      delBtn.title = 'Hapus data simpanan ini';
-      delBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if(confirm('Yakin ingin menghapus data "' + key + '" ?')) {
-          deleteData(key);
-        }
-      });
-
-      li.appendChild(spanName);
-      li.appendChild(delBtn);
-      storageListUl.appendChild(li);
-    });
-  }
-
-  function saveDataNew() {
+  async function saveDataNew() {
     const saveName = saveNameInput.value.trim();
     if(!saveName) return alert('Masukkan nama simpan terlebih dahulu.');
 
@@ -244,62 +226,105 @@
       data.push(values);
     });
 
-    let dataList = {};
-    const dataStr = localStorage.getItem(STORAGE_KEY);
-    if(dataStr) dataList = JSON.parse(dataStr);
-
-    dataList[saveName] = data;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(dataList));
-
-    alert('Data berhasil disimpan dengan nama "' + saveName + '".');
-    saveNameInput.value = '';
-    updateSaveNewBtnState();
-    renderStorageList();
-  }
-
-  function loadData(key) {
-    const dataStr = localStorage.getItem(STORAGE_KEY);
-    if(!dataStr) return alert('Tidak ada data tersimpan.');
-    const dataList = JSON.parse(dataStr);
-    if(!dataList[key]) return alert('Data dengan nama tersebut tidak ditemukan.');
-
-    buatBaris();
-    const trs = tbody.querySelectorAll('tr');
-    trs.forEach((tr, i) => {
-      const inputs = tr.querySelectorAll('input');
-      if(dataList[key][i]) {
-        dataList[key][i].forEach((val, j) => {
-          if(inputs[j]) inputs[j].value = val;
-        });
-      }
-    });
-    updateResults();
-    alert('Data "' + key + '" berhasil dimuat dan siap diedit.');
-  }
-
-  function deleteData(key) {
-    const dataStr = localStorage.getItem(STORAGE_KEY);
-    if(!dataStr) return;
-    let dataList = JSON.parse(dataStr);
-    if(dataList[key]) {
-      delete dataList[key];
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(dataList));
-      alert('Data "' + key + '" berhasil dihapus.');
+    try {
+      await db.collection('stokRoll').doc(saveName).set({
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        data: data
+      });
+      alert('Data berhasil disimpan dengan nama "' + saveName + '".');
+      saveNameInput.value = '';
+      updateSaveNewBtnState();
       renderStorageList();
+    } catch(error) {
+      alert('Gagal menyimpan data: ' + error.message);
     }
   }
 
-  // Fitur Enter pindah ke bawah pada kolom yang sama
+  async function renderStorageList() {
+    storageListUl.innerHTML = '';
+    try {
+      const snapshot = await db.collection('stokRoll').orderBy('createdAt', 'desc').get();
+      snapshot.forEach(doc => {
+        const key = doc.id;
+        const li = document.createElement('li');
+
+        const spanName = document.createElement('span');
+        spanName.textContent = key;
+        spanName.className = 'nameItem';
+        spanName.title = "Klik untuk muat data '" + key + "'";
+        spanName.style.userSelect = 'none';
+
+        spanName.addEventListener('click', () => {
+          loadData(key);
+        });
+
+        const delBtn = document.createElement('button');
+        delBtn.textContent = 'Hapus';
+        delBtn.className = 'deleteBtn';
+        delBtn.title = 'Hapus data simpanan ini';
+        delBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if(confirm('Yakin ingin menghapus data "' + key + '" ?')) {
+            deleteData(key);
+          }
+        });
+
+        li.appendChild(spanName);
+        li.appendChild(delBtn);
+        storageListUl.appendChild(li);
+      });
+    } catch(error) {
+      alert('Gagal memuat daftar simpanan: ' + error.message);
+    }
+  }
+
+  async function loadData(key) {
+    try {
+      const doc = await db.collection('stokRoll').doc(key).get();
+      if(!doc.exists) {
+        alert('Data dengan nama tersebut tidak ditemukan.');
+        return;
+      }
+      const data = doc.data().data;
+      buatBaris();
+      const trs = tbody.querySelectorAll('tr');
+      trs.forEach((tr, i) => {
+        const inputs = tr.querySelectorAll('input');
+        if(data[i]) {
+          data[i].forEach((val, j) => {
+            if(inputs[j]) inputs[j].value = val;
+          });
+        }
+      });
+      updateResults();
+      alert('Data "' + key + '" berhasil dimuat dan siap diedit.');
+    } catch(error) {
+      alert('Gagal memuat data: ' + error.message);
+    }
+  }
+
+  async function deleteData(key) {
+    if(!confirm('Yakin ingin menghapus data "' + key + '" ?')) return;
+    try {
+      await db.collection('stokRoll').doc(key).delete();
+      alert('Data "' + key + '" berhasil dihapus.');
+      renderStorageList();
+    } catch(error) {
+      alert('Gagal menghapus data: ' + error.message);
+    }
+  }
+
+  // Enter pindah ke bawah pada kolom yang sama
   tbody.addEventListener('keydown', (e) => {
     if (e.target.classList.contains('rollInput') && e.key === 'Enter') {
       e.preventDefault();
       const inputs = Array.from(tbody.querySelectorAll('.rollInput'));
       const currentIndex = inputs.indexOf(e.target);
-      const colsPerRow = 5; // jumlah kolom input per baris
+      const colsPerRow = 5;
 
       let nextIndex = currentIndex + colsPerRow;
       if(nextIndex >= inputs.length) {
-        nextIndex = currentIndex % colsPerRow; // kembali ke baris paling atas kolom sama
+        nextIndex = currentIndex % colsPerRow;
       }
       inputs[nextIndex].focus();
     }
