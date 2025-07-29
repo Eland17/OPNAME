@@ -88,14 +88,14 @@
   ul#storageList li {
     background: white;
     margin-bottom: 8px;
-    padding: 6px 8px;  /* Sedikit diperkecil padding */
+    padding: 6px 8px;
     border-radius: 4px;
     display: flex;
     justify-content: space-between;
     align-items: center;
     cursor: pointer;
     box-shadow: 0 0 3px rgba(0,0,0,0.1);
-    font-size: 14px;  /* font lebih kecil */
+    font-size: 14px;
   }
   ul#storageList li:hover {
     background: #e0f0ff;
@@ -105,14 +105,14 @@
     border: none;
     color: white;
     border-radius: 4px;
-    font-size: 12px;  /* tombol delete juga diperkecil */
+    font-size: 12px;
     padding: 3px 7px;
     cursor: pointer;
   }
   ul#storageList li span.nameItem {
     flex: 1;
     user-select: none;
-    font-size: 14px; /* agar seragam dengan li */
+    font-size: 14px;
   }
 </style>
 </head>
@@ -288,6 +288,22 @@
       renderStorageList();
     }
   }
+
+  // Fitur Enter pindah ke bawah pada kolom yang sama
+  tbody.addEventListener('keydown', (e) => {
+    if (e.target.classList.contains('rollInput') && e.key === 'Enter') {
+      e.preventDefault();
+      const inputs = Array.from(tbody.querySelectorAll('.rollInput'));
+      const currentIndex = inputs.indexOf(e.target);
+      const colsPerRow = 5; // jumlah kolom input per baris
+
+      let nextIndex = currentIndex + colsPerRow;
+      if(nextIndex >= inputs.length) {
+        nextIndex = currentIndex % colsPerRow; // kembali ke baris paling atas kolom sama
+      }
+      inputs[nextIndex].focus();
+    }
+  });
 
   saveNameInput.addEventListener('input', updateSaveNewBtnState);
   tbody.addEventListener('input', e => {
