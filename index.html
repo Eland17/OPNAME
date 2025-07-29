@@ -1,118 +1,118 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Stok Opname Fabric</title>
-<style>
-  body {
-    font-family: Arial, sans-serif;
-    max-width: 800px;
-    margin: auto;
-    padding: 10px;
-    display: flex;
-    gap: 20px;
-  }
-  #mainSection {
-    flex: 2;
-  }
-  table {
-    border-collapse: collapse;
-    width: 100%;
-    margin-top: 10px;
-  }
-  td {
-    border: 1px solid #888;
-    padding: 6px;
-    text-align: center;
-  }
-  input[type=number] {
-    width: 80px;
-    padding: 4px;
-    font-size: 16px;
-    text-align: right;
-  }
-  #results {
-    margin-top: 12px;
-    font-size: 18px;
-    font-weight: bold;
-    text-align: right;
-  }
-  #saveNewSection {
-    margin-top:15px;
-    display:flex;
-    gap:8px;
-    align-items:center;
-  }
-  #saveName {
-    padding: 6px;
-    font-size: 16px;
-    flex: 1 1 200px;
-  }
-  button {
-    padding: 8px 16px;
-    font-size: 16px;
-    cursor: pointer;
-    border: none;
-    border-radius: 4px;
-    color: white;
-  }
-  #saveNewBtn {
-    background-color: #28a745;
-  }
-  #saveNewBtn:disabled {
-    background-color: #999;
-    cursor: not-allowed;
-  }
-  #listSection {
-    flex: 1;
-    border: 1px solid #ccc;
-    padding: 8px;
-    max-height: 450px;
-    overflow-y: auto;
-    background: #f9f9f9;
-    border-radius: 6px;
-  }
-  #listSection h3 {
-    margin-top: 0;
-    font-size: 20px;
-    text-align: center;
-  }
-  ul#storageList {
-    list-style: none;
-    padding-left: 0;
-    margin: 0;
-  }
-  ul#storageList li {
-    background: white;
-    margin-bottom: 8px;
-    padding: 6px 8px;
-    border-radius: 4px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    cursor: pointer;
-    box-shadow: 0 0 3px rgba(0,0,0,0.1);
-    font-size: 14px;
-  }
-  ul#storageList li:hover {
-    background: #e0f0ff;
-  }
-  ul#storageList li button.deleteBtn {
-    background: #dc3545;
-    border: none;
-    color: white;
-    border-radius: 4px;
-    font-size: 12px;
-    padding: 3px 7px;
-    cursor: pointer;
-  }
-  ul#storageList li span.nameItem {
-    flex: 1;
-    user-select: none;
-    font-size: 14px;
-  }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Stok Opname Fabric</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: auto;
+      padding: 10px;
+      display: flex;
+      gap: 20px;
+    }
+    #mainSection {
+      flex: 2;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 10px;
+    }
+    td {
+      border: 1px solid #888;
+      padding: 6px;
+      text-align: center;
+    }
+    input[type=number] {
+      width: 60px;
+      padding: 2px;
+      font-size: 14px;
+      text-align: right;
+    }
+    #results {
+      margin-top: 12px;
+      font-size: 18px;
+      font-weight: bold;
+      text-align: right;
+    }
+    #saveNewSection {
+      margin-top:15px;
+      display:flex;
+      gap:8px;
+      align-items:center;
+    }
+    #saveName {
+      padding: 6px;
+      font-size: 16px;
+      flex: 1 1 200px;
+    }
+    button {
+      padding: 8px 16px;
+      font-size: 16px;
+      cursor: pointer;
+      border: none;
+      border-radius: 4px;
+      color: white;
+    }
+    #saveNewBtn {
+      background-color: #28a745;
+    }
+    #saveNewBtn:disabled {
+      background-color: #999;
+      cursor: not-allowed;
+    }
+    #listSection {
+      flex: 1;
+      border: 1px solid #ccc;
+      padding: 8px;
+      max-height: 450px;
+      overflow-y: auto;
+      background: #f9f9f9;
+      border-radius: 6px;
+    }
+    #listSection h3 {
+      margin-top: 0;
+      font-size: 20px;
+      text-align: center;
+    }
+    ul#storageList {
+      list-style: none;
+      padding-left: 0;
+      margin: 0;
+    }
+    ul#storageList li {
+      background: white;
+      margin-bottom: 8px;
+      padding: 6px 8px;
+      border-radius: 4px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      box-shadow: 0 0 3px rgba(0,0,0,0.1);
+      font-size: 14px;
+    }
+    ul#storageList li:hover {
+      background: #e0f0ff;
+    }
+    ul#storageList li button.deleteBtn {
+      background: #dc3545;
+      border: none;
+      color: white;
+      border-radius: 4px;
+      font-size: 12px;
+      padding: 3px 7px;
+      cursor: pointer;
+    }
+    ul#storageList li span.nameItem {
+      flex: 1;
+      user-select: none;
+      font-size: 14px;
+    }
+  </style>
 </head>
 <body>
 
@@ -148,29 +148,25 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
 <script>
-  // Konfigurasi Firebase kamu
   const firebaseConfig = {
     apiKey: "AIzaSyACOluEhfPw4JBlBaHyXtf1k3TIJAHikKo",
     authDomain: "inventory-gudang-16dfe.firebaseapp.com",
     databaseURL: "https://inventory-gudang-16dfe-default-rtdb.asia-southeast1.firebasedatabase.app",
     projectId: "inventory-gudang-16dfe",
-    storageBucket: "inventory-gudang-16dfe.firebasestorage.app",
+    storageBucket: "inventory-gudang-16dfe.appspot.com",
     messagingSenderId: "663364522026",
     appId: "1:663364522026:web:f48fb1ba0331695de83353",
     measurementId: "G-NM1JKR9W8V"
   };
 
-  // Initialize Firebase
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
 
   const tbody = document.querySelector('#stokTable tbody');
   const hasilCountEl = document.getElementById('hasilCount');
   const hasilSumEl = document.getElementById('hasilSum');
-
   const saveNameInput = document.getElementById('saveName');
   const saveNewBtn = document.getElementById('saveNewBtn');
-
   const storageListUl = document.getElementById('storageList');
 
   function buatBaris() {
@@ -179,6 +175,8 @@
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>${i}</td>
+        <td><input type="number" min="0" class="rollInput"></td>
+        <td><input type="number" min="0" class="rollInput"></td>
         <td><input type="number" min="0" class="rollInput"></td>
         <td><input type="number" min="0" class="rollInput"></td>
         <td><input type="number" min="0" class="rollInput"></td>
@@ -210,8 +208,7 @@
 
   function updateSaveNewBtnState() {
     const saveName = saveNameInput.value.trim();
-    const hasData = tbody.querySelectorAll('.rollInput').length > 0 &&
-                    Array.from(tbody.querySelectorAll('.rollInput')).some(i => i.value.trim() !== '');
+    const hasData = Array.from(tbody.querySelectorAll('.rollInput')).some(i => i.value.trim() !== '');
     saveNewBtn.disabled = saveName === '' || !hasData;
   }
 
@@ -231,6 +228,8 @@
           col3: values[2],
           col4: values[3],
           col5: values[4],
+          col6: values[5],
+          col7: values[6],
         }
       });
     });
@@ -261,11 +260,7 @@
         spanName.textContent = key;
         spanName.className = 'nameItem';
         spanName.title = "Klik untuk muat data '" + key + "'";
-        spanName.style.userSelect = 'none';
-
-        spanName.addEventListener('click', () => {
-          loadData(key);
-        });
+        spanName.addEventListener('click', () => loadData(key));
 
         const delBtn = document.createElement('button');
         delBtn.textContent = 'Hapus';
@@ -305,6 +300,8 @@
           inputs[2].value = data[i].cols.col3 || '0';
           inputs[3].value = data[i].cols.col4 || '0';
           inputs[4].value = data[i].cols.col5 || '0';
+          inputs[5].value = data[i].cols.col6 || '0';
+          inputs[6].value = data[i].cols.col7 || '0';
         }
       });
       updateResults();
@@ -315,7 +312,6 @@
   }
 
   async function deleteData(key) {
-    if (!confirm('Yakin ingin menghapus data "' + key + '" ?')) return;
     try {
       await db.collection('stokRoll').doc(key).delete();
       alert('Data "' + key + '" berhasil dihapus.');
@@ -325,14 +321,12 @@
     }
   }
 
-  // Enter pindah ke bawah pada kolom yang sama
   tbody.addEventListener('keydown', (e) => {
     if (e.target.classList.contains('rollInput') && e.key === 'Enter') {
       e.preventDefault();
       const inputs = Array.from(tbody.querySelectorAll('.rollInput'));
       const currentIndex = inputs.indexOf(e.target);
-      const colsPerRow = 5;
-
+      const colsPerRow = 7;
       let nextIndex = currentIndex + colsPerRow;
       if (nextIndex >= inputs.length) {
         nextIndex = currentIndex % colsPerRow;
@@ -349,7 +343,6 @@
   });
   saveNewBtn.addEventListener('click', saveDataNew);
 
-  // Inisialisasi
   buatBaris();
   updateResults();
   updateSaveNewBtnState();
