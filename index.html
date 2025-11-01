@@ -22,18 +22,17 @@
       text-align: center;
     }
 
-    /* Wrapper tabel untuk auto shrink */
+    /* Bungkus tabel supaya scroll horizontal di HP */
     .tableWrapper {
-      width: 100%;
-      overflow-x: hidden;
-      transform-origin: top left;
-      transition: transform 0.2s;
+      overflow-x: auto;
     }
 
     table {
       border-collapse: collapse;
       width: 100%;
-      min-width: 600px; /* tetap cukup lebar agar rapi */
+      margin-top: 10px;
+      table-layout: fixed; /* Supaya kolom menyesuaikan lebar */
+      min-width: 600px; /* Pastikan kolom tetap cukup lebar */
       table-layout: fixed;
     }
 
@@ -148,14 +147,15 @@
       cursor: pointer;
     }
 
-    /* Media Query untuk HP: auto shrink */
+    /* Media Query untuk layar kecil (HP) */
+    /* Media Query untuk HP */
     @media screen and (max-width: 600px) {
-      .tableWrapper {
-        transform: scale(0.7); /* tabel dan teks mengecil */
-      }
-      table td input {
+      table, td, input[type=number] {
         font-size: 12px;
-        padding: 2px;
+      }
+      input[type=number] {
+        width: 40px;
+        width: 50px;
       }
       #results {
         font-size: 16px;
@@ -163,6 +163,9 @@
       #saveNewSection {
         flex-direction: column;
         align-items: stretch;
+      }
+      #saveName {
+        flex: 1 1 auto;
       }
       button {
         width: 100%;
@@ -182,6 +185,11 @@
 <div id="mainSection">
   <h2>Stok Opname Fabric</h2>
 
+  <table id="stokTable">
+    <tbody>
+      <!-- Baris dibuat otomatis -->
+    </tbody>
+  </table>
   <div class="tableWrapper">
     <table id="stokTable">
       <tbody>
@@ -213,6 +221,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
 <script>
+  // Kode JS sama seperti sebelumnya
   const firebaseConfig = {
     apiKey: "AIzaSyACOluEhfPw4JBlBaHyXtf1k3TIJAHikKo",
     authDomain: "inventory-gudang-16dfe.firebaseapp.com",
