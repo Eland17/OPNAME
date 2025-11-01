@@ -22,15 +22,18 @@
       text-align: center;
     }
 
-    /* Bungkus tabel supaya scroll horizontal di HP */
+    /* Wrapper tabel untuk auto shrink */
     .tableWrapper {
-      overflow-x: auto;
+      width: 100%;
+      overflow-x: hidden;
+      transform-origin: top left;
+      transition: transform 0.2s;
     }
 
     table {
       border-collapse: collapse;
       width: 100%;
-      min-width: 600px; /* Pastikan kolom tetap cukup lebar */
+      min-width: 600px; /* tetap cukup lebar agar rapi */
       table-layout: fixed;
     }
 
@@ -145,10 +148,14 @@
       cursor: pointer;
     }
 
-    /* Media Query untuk HP */
+    /* Media Query untuk HP: auto shrink */
     @media screen and (max-width: 600px) {
-      input[type=number] {
-        width: 50px;
+      .tableWrapper {
+        transform: scale(0.7); /* tabel dan teks mengecil */
+      }
+      table td input {
+        font-size: 12px;
+        padding: 2px;
       }
       #results {
         font-size: 16px;
@@ -206,7 +213,6 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
 <script>
-  // Kode JS sama seperti sebelumnya
   const firebaseConfig = {
     apiKey: "AIzaSyACOluEhfPw4JBlBaHyXtf1k3TIJAHikKo",
     authDomain: "inventory-gudang-16dfe.firebaseapp.com",
