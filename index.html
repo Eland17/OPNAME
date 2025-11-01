@@ -7,47 +7,61 @@
   <style>
     body {
       font-family: Arial, sans-serif;
-      max-width: 800px;
-      margin: auto;
+      margin: 0;
       padding: 10px;
-      /* hapus flex, jadi default block layout */
+      box-sizing: border-box;
     }
+
     #mainSection {
-      /* block, penuh lebar */
+      width: 100%;
+      padding: 10px;
+      box-sizing: border-box;
     }
+
     table {
       border-collapse: collapse;
       width: 100%;
       margin-top: 10px;
+      table-layout: fixed; /* Supaya kolom menyesuaikan lebar */
     }
+
     td {
       border: 1px solid #888;
       padding: 6px;
       text-align: center;
+      font-size: 14px;
+      word-wrap: break-word;
     }
+
     input[type=number] {
       width: 60px;
       padding: 2px;
       font-size: 14px;
       text-align: right;
     }
+
     #results {
       margin-top: 12px;
       font-size: 18px;
       font-weight: bold;
       text-align: right;
     }
+
     #saveNewSection {
       margin-top: 15px;
       display: flex;
       gap: 8px;
       align-items: center;
+      flex-wrap: wrap;
     }
+
     #saveName {
       padding: 6px;
       font-size: 16px;
       flex: 1 1 200px;
+      min-width: 100px;
     }
+
     button {
       padding: 8px 16px;
       font-size: 16px;
@@ -56,13 +70,16 @@
       border-radius: 4px;
       color: white;
     }
+
     #saveNewBtn {
       background-color: #28a745;
     }
+
     #saveNewBtn:disabled {
       background-color: #999;
       cursor: not-allowed;
     }
+
     #listSection {
       margin-top: 20px;
       border: 1px solid #ccc;
@@ -72,16 +89,19 @@
       background: #f9f9f9;
       border-radius: 6px;
     }
+
     #listSection h3 {
       margin-top: 0;
       font-size: 20px;
       text-align: center;
     }
+
     ul#storageList {
       list-style: none;
       padding-left: 0;
       margin: 0;
     }
+
     ul#storageList li {
       background: white;
       margin-bottom: 8px;
@@ -92,16 +112,20 @@
       align-items: center;
       cursor: pointer;
       box-shadow: 0 0 3px rgba(0, 0, 0, 0.1);
-      font-size: 11px;
+      font-size: 12px;
     }
+
     ul#storageList li:hover {
       background: #e0f0ff;
     }
+
     ul#storageList li span.nameItem {
       flex: 1;
       user-select: none;
-      font-size: 11px;
+      font-size: 12px;
+      overflow-wrap: break-word;
     }
+
     ul#storageList li button.deleteBtn {
       background: #dc3545;
       border: none;
@@ -110,6 +134,36 @@
       font-size: 10px;
       padding: 2px 5px;
       cursor: pointer;
+    }
+
+    /* Media Query untuk layar kecil (HP) */
+    @media screen and (max-width: 600px) {
+      table, td, input[type=number] {
+        font-size: 12px;
+      }
+      input[type=number] {
+        width: 40px;
+      }
+      #results {
+        font-size: 16px;
+      }
+      #saveNewSection {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      #saveName {
+        flex: 1 1 auto;
+      }
+      button {
+        width: 100%;
+        font-size: 14px;
+      }
+      ul#storageList li {
+        font-size: 11px;
+      }
+      ul#storageList li span.nameItem {
+        font-size: 11px;
+      }
     }
   </style>
 </head>
@@ -147,7 +201,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
 <script>
-  // Kode JavaScript tetap sama seperti sebelumnya, tidak berubah
+  // Kode JS sama seperti sebelumnya
   const firebaseConfig = {
     apiKey: "AIzaSyACOluEhfPw4JBlBaHyXtf1k3TIJAHikKo",
     authDomain: "inventory-gudang-16dfe.firebaseapp.com",
