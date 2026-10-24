@@ -1,353 +1,143 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Stok Opname Fabric</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      max-width: 800px;
-      margin: auto;
-      padding: 10px;
-      /* hapus flex, jadi default block layout */
-    }
-    #mainSection {
-      /* block, penuh lebar */
-    }
-    table {
-      border-collapse: collapse;
-      width: 100%;
-      margin-top: 10px;
-    }
-    td {
-      border: 1px solid #888;
-      padding: 6px;
-      text-align: center;
-    }
-    input[type=number] {
-      width: 60px;
-      padding: 2px;
-      font-size: 14px;
-      text-align: right;
-    }
-    #results {
-      margin-top: 12px;
-      font-size: 18px;
-      font-weight: bold;
-      text-align: right;
-    }
-    #saveNewSection {
-      margin-top: 15px;
-      display: flex;
-      gap: 8px;
-      align-items: center;
-    }
-    #saveName {
-      padding: 6px;
-      font-size: 16px;
-      flex: 1 1 200px;
-    }
-    button {
-      padding: 8px 16px;
-      font-size: 16px;
-      cursor: pointer;
-      border: none;
-      border-radius: 4px;
-      color: white;
-    }
-    #saveNewBtn {
-      background-color: #28a745;
-    }
-    #saveNewBtn:disabled {
-      background-color: #999;
-      cursor: not-allowed;
-    }
-    #listSection {
-      margin-top: 20px;
-      border: 1px solid #ccc;
-      padding: 8px;
-      max-height: 300px;
-      overflow-y: auto;
-      background: #f9f9f9;
-      border-radius: 6px;
-    }
-    #listSection h3 {
-      margin-top: 0;
-      font-size: 20px;
-      text-align: center;
-    }
-    ul#storageList {
-      list-style: none;
-      padding-left: 0;
-      margin: 0;
-    }
-    ul#storageList li {
-      background: white;
-      margin-bottom: 8px;
-      padding: 6px 10px;
-      border-radius: 4px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      cursor: pointer;
-      box-shadow: 0 0 3px rgba(0, 0, 0, 0.1);
-      font-size: 11px;
-    }
-    ul#storageList li:hover {
-      background: #e0f0ff;
-    }
-    ul#storageList li span.nameItem {
-      flex: 1;
-      user-select: none;
-      font-size: 11px;
-    }
-    ul#storageList li button.deleteBtn {
-      background: #dc3545;
-      border: none;
-      color: white;
-      border-radius: 4px;
-      font-size: 10px;
-      padding: 2px 5px;
-      cursor: pointer;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplikasi Scan Barcode & Auto Count Qty</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Library Html5-Qrcode -->
+    <script src="https://unpkg.com/html5-qrcode"></script>
 </head>
-<body>
+<body class="bg-light">
 
-<div id="mainSection">
-  <h2>Stok Opname Fabric</h2>
+    <div class="container my-5">
+        <h2 class="text-center mb-4">Scan Barcode - Auto Count Qty</h2>
+        
+        <div class="row">
+            <!-- Kolom Kamera Scanner -->
+            <div class="col-md-5 mb-4">
+                <div class="card shadow-sm">
+                    <div class="card-body text-center">
+                        <h5>Arahkan Kamera ke Barcode</h5>
+                        <div id="reader" style="width: 100%;"></div>
+                        <div class="mt-3 text-muted small">
+                            Tips: Jeda beberapa detik antar scan jika menggunakan barcode yang sama.
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-  <table id="stokTable">
-    <tbody>
-      <!-- Baris dibuat otomatis -->
-    </tbody>
-  </table>
+            <!-- Kolom Tabel Hasil Scan & Hitung Otomatis -->
+            <div class="col-md-7">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="mb-0">Daftar Barang Terscan</h5>
+                            <button class="btn btn-sm btn-outline-danger" onclick="resetData()">Reset Data</button>
+                        </div>
+                        
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-striped align-middle">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Kode Barcode</th>
+                                        <th>Nama Barang</th>
+                                        <th class="text-center">Jumlah (Qty)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabelScan">
+                                    <tr>
+                                        <td colspan="3" class="text-center text-muted">Belum ada barcode yang disscan</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
 
-  <div id="results">
-    <div>Qty Roll : <span id="hasilCount">0</span></div>
-    <div>Qty M/Y  : <span id="hasilSum">0</span></div>
-  </div>
+                        <div class="mt-3 p-3 bg-white border rounded">
+                            <h4>Total Keseluruhan Item: <span id="totalQty" class="text-primary">0</span> pcs</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-  <div id="saveNewSection">
-    <input type="text" id="saveName" placeholder="Nama Simpan Baru" />
-    <button id="saveNewBtn" disabled>Simpan Data Baru</button>
-  </div>
-</div>
+    <script>
+        // Simulasi database nama barang berdasarkan kode barcode
+        const databaseProduk = {
+            "8996001332011": "Mie Instan Goreng",
+            "8992760121123": "Air Mineral 600ml",
+            "8999999111222": "Roti Coklat"
+        };
 
-<div id="listSection">
-  <h3>Daftar Simpan</h3>
-  <ul id="storageList">
-    <!-- List item muncul di sini -->
-  </ul>
-</div>
+        // Objek untuk menyimpan data barang yang sudah disscan (sebagai keranjang/memory)
+        let scannedData = {};
 
-<!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+        // Fungsi ketika Barcode berhasil dibaca
+        function onScanSuccess(decodedText, decodedResult) {
+            // Cek apakah barang sudah pernah disscan sebelumnya
+            if (scannedData[decodedText]) {
+                // Jika sudah ada, tambahkan qty-nya +1
+                scannedData[decodedText].qty += 1;
+            } else {
+                // Jika belum ada, buat data baru dengan qty 1
+                let namaBarang = databaseProduk[decodedText] || "Barang Lainnya (Tidak Dikenal)";
+                scannedData[decodedText] = {
+                    nama: namaBarang,
+                    qty: 1
+                };
+            }
 
-<script>
-  // Kode JavaScript tetap sama seperti sebelumnya, tidak berubah
-  const firebaseConfig = {
-    apiKey: "AIzaSyACOluEhfPw4JBlBaHyXtf1k3TIJAHikKo",
-    authDomain: "inventory-gudang-16dfe.firebaseapp.com",
-    databaseURL: "https://inventory-gudang-16dfe-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "inventory-gudang-16dfe",
-    storageBucket: "inventory-gudang-16dfe.appspot.com",
-    messagingSenderId: "663364522026",
-    appId: "1:663364522026:web:f48fb1ba0331695de83353",
-    measurementId: "G-NM1JKR9W8V"
-  };
-
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
-
-  const tbody = document.querySelector('#stokTable tbody');
-  const hasilCountEl = document.getElementById('hasilCount');
-  const hasilSumEl = document.getElementById('hasilSum');
-  const saveNameInput = document.getElementById('saveName');
-  const saveNewBtn = document.getElementById('saveNewBtn');
-  const storageListUl = document.getElementById('storageList');
-
-  function buatBaris() {
-    tbody.innerHTML = '';
-    for (let i = 1; i <= 10; i++) {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${i}</td>
-        <td><input type="number" min="0" class="rollInput"></td>
-        <td><input type="number" min="0" class="rollInput"></td>
-        <td><input type="number" min="0" class="rollInput"></td>
-        <td><input type="number" min="0" class="rollInput"></td>
-        <td><input type="number" min="0" class="rollInput"></td>
-        <td><input type="number" min="0" class="rollInput"></td>
-        <td><input type="number" min="0" class="rollInput"></td>
-      `;
-      tbody.appendChild(tr);
-    }
-  }
-
-  function formatRibuan(num) {
-    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-  }
-
-  function updateResults() {
-    const inputs = tbody.querySelectorAll('.rollInput');
-    let count = 0;
-    let sum = 0;
-    inputs.forEach(input => {
-      let val = parseInt(input.value);
-      if (isNaN(val) || val < 0) val = 0;
-      if (val > 0) count++;
-      sum += val;
-    });
-    hasilCountEl.textContent = count;
-    hasilSumEl.textContent = formatRibuan(sum);
-    updateSaveNewBtnState();
-  }
-
-  function updateSaveNewBtnState() {
-    const saveName = saveNameInput.value.trim();
-    const hasData = Array.from(tbody.querySelectorAll('.rollInput')).some(i => i.value.trim() !== '');
-    saveNewBtn.disabled = saveName === '' || !hasData;
-  }
-
-  async function saveDataNew() {
-    const saveName = saveNameInput.value.trim();
-    if (!saveName) return alert('Masukkan nama simpan terlebih dahulu.');
-
-    const data = [];
-    const trs = tbody.querySelectorAll('tr');
-    trs.forEach((tr, idx) => {
-      const values = Array.from(tr.querySelectorAll('input')).map(i => i.value.trim() || '0');
-      data.push({
-        row: idx + 1,
-        cols: {
-          col1: values[0],
-          col2: values[1],
-          col3: values[2],
-          col4: values[3],
-          col5: values[4],
-          col6: values[5],
-          col7: values[6],
+            // Perbarui tampilan tabel dan total
+            updateTabel();
         }
-      });
-    });
 
-    try {
-      await db.collection('stokRoll').doc(saveName).set({
-        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-        data: data
-      });
-      alert('Data berhasil disimpan dengan nama "' + saveName + '".');
-      saveNameInput.value = '';
-      updateSaveNewBtnState();
-      renderStorageList();
-    } catch (error) {
-      alert('Gagal menyimpan data: ' + error.message);
-    }
-  }
-
-  async function renderStorageList() {
-    storageListUl.innerHTML = '';
-    try {
-      const snapshot = await db.collection('stokRoll').orderBy('createdAt', 'desc').get();
-      snapshot.forEach(doc => {
-        const key = doc.id;
-        const li = document.createElement('li');
-
-        const spanName = document.createElement('span');
-        spanName.textContent = key;
-        spanName.className = 'nameItem';
-        spanName.title = "Klik untuk muat data '" + key + "'";
-        spanName.addEventListener('click', () => loadData(key));
-
-        const delBtn = document.createElement('button');
-        delBtn.textContent = 'Hapus';
-        delBtn.className = 'deleteBtn';
-        delBtn.title = 'Hapus data simpanan ini';
-        delBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          if (confirm('Yakin ingin menghapus data "' + key + '" ?')) {
-            deleteData(key);
-          }
-        });
-
-        li.appendChild(spanName);
-        li.appendChild(delBtn);
-        storageListUl.appendChild(li);
-      });
-    } catch (error) {
-      alert('Gagal memuat daftar simpanan: ' + error.message);
-    }
-  }
-
-  async function loadData(key) {
-    try {
-      const doc = await db.collection('stokRoll').doc(key).get();
-      if (!doc.exists) {
-        alert('Data dengan nama tersebut tidak ditemukan.');
-        return;
-      }
-      const data = doc.data().data;
-      buatBaris();
-      const trs = tbody.querySelectorAll('tr');
-      trs.forEach((tr, i) => {
-        const inputs = tr.querySelectorAll('input');
-        if (data[i]) {
-          inputs[0].value = data[i].cols.col1 || '0';
-          inputs[1].value = data[i].cols.col2 || '0';
-          inputs[2].value = data[i].cols.col3 || '0';
-          inputs[3].value = data[i].cols.col4 || '0';
-          inputs[4].value = data[i].cols.col5 || '0';
-          inputs[5].value = data[i].cols.col6 || '0';
-          inputs[6].value = data[i].cols.col7 || '0';
+        function onScanFailure(error) {
+            // Abaikan error saat kamera sedang mencari-cari barcode
         }
-      });
-      updateResults();
-      alert('Data "' + key + '" berhasil dimuat dan siap diedit.');
-    } catch (error) {
-      alert('Gagal memuat data: ' + error.message);
-    }
-  }
 
-  async function deleteData(key) {
-    try {
-      await db.collection('stokRoll').doc(key).delete();
-      alert('Data "' + key + '" berhasil dihapus.');
-      renderStorageList();
-    } catch (error) {
-      alert('Gagal menghapus data: ' + error.message);
-    }
-  }
+        // Fungsi untuk merender ulang tabel ke HTML
+        function updateTabel() {
+            const tbody = document.getElementById('tabelScan');
+            tbody.innerHTML = "";
 
-  tbody.addEventListener('keydown', (e) => {
-    if (e.target.classList.contains('rollInput') && e.key === 'Enter') {
-      e.preventDefault();
-      const inputs = Array.from(tbody.querySelectorAll('.rollInput'));
-      const currentIndex = inputs.indexOf(e.target);
-      const colsPerRow = 7;
-      let nextIndex = currentIndex + colsPerRow;
-      if (nextIndex >= inputs.length) {
-        nextIndex = currentIndex % colsPerRow;
-      }
-      inputs[nextIndex].focus();
-    }
-  });
+            let totalSemuaQty = 0;
+            let keys = Object.keys(scannedData);
 
-  saveNameInput.addEventListener('input', updateSaveNewBtnState);
-  tbody.addEventListener('input', e => {
-    if (e.target.classList.contains('rollInput')) {
-      updateResults();
-    }
-  });
-  saveNewBtn.addEventListener('click', saveDataNew);
+            if (keys.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="3" class="text-center text-muted">Belum ada barcode yang disscan</td></tr>`;
+                document.getElementById('totalQty').innerText = "0";
+                return;
+            }
 
-  buatBaris();
-  updateResults();
-  updateSaveNewBtnState();
-  renderStorageList();
-</script>
+            keys.forEach(code => {
+                let item = scannedData[code];
+                totalSemuaQty += item.qty;
+
+                let row = `<tr>
+                    <td><code>${code}</code></td>
+                    <td>${item.nama}</td>
+                    <td class="text-center"><strong>${item.qty}</strong></td>
+                </tr>`;
+                tbody.innerHTML += row;
+            });
+
+            // Tampilkan total keseluruhan item
+            document.getElementById('totalQty').innerText = totalSemuaQty;
+        }
+
+        // Fungsi untuk mereset data
+        function resetData() {
+            scannedData = {};
+            updateTabel();
+        }
+
+        // Inisialisasi Scanner Kamera
+        let html5QrcodeScanner = new Html5QrcodeScanner(
+            "reader", { fps: 10, qrbox: { width: 250, height: 150 } }, false);
+        html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+    </script>
 
 </body>
 </html>
