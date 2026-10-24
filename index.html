@@ -2,693 +2,168 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ScanCounter Mobile - Auto Barcode & QR Count</title>
-    <!-- Bootstrap 5 CSS -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scan Barcode - Mode Tangkap / Berhenti Otomatis</title>
+    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Html5-Qrcode Library -->
+    <!-- Library Html5-Qrcode -->
     <script src="https://unpkg.com/html5-qrcode"></script>
-
-    <style>
-        :root {
-            --primary-color: #0d6efd;
-            --accent-color: #198754;
-            --bg-dark: #121824;
-            --card-radius: 16px;
-        }
-
-        body {
-            background-color: #f4f6f9;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            user-select: none;
-            -webkit-user-select: none;
-            padding-bottom: 90px;
-        }
-
-        /* Mobile App Header */
-        .app-header {
-            background: linear-gradient(135deg, #1e293b, #0f172a);
-            color: white;
-            padding: 14px 18px;
-            border-bottom-left-radius: 20px;
-            border-bottom-right-radius: 20px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-        }
-
-        /* Camera View Container */
-        .scanner-card {
-            border-radius: var(--card-radius);
-            overflow: hidden;
-            background: #000;
-            position: relative;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
-        }
-
-        #reader {
-            width: 100%;
-            background: #000;
-            border: none !important;
-        }
-
-        #reader video {
-            object-fit: cover !important;
-            border-radius: var(--card-radius);
-        }
-
-        /* Scanner Status Overlay */
-        .scan-overlay-badge {
-            position: absolute;
-            top: 12px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 10;
-            padding: 6px 16px;
-            border-radius: 30px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            backdrop-filter: blur(8px);
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-            transition: all 0.3s ease;
-        }
-
-        .badge-ready { background: rgba(25, 135, 84, 0.85); color: white; }
-        .badge-cooldown { background: rgba(255, 193, 7, 0.9); color: #212529; }
-        .badge-paused { background: rgba(220, 53, 69, 0.85); color: white; }
-
-        /* Floating Big Action Button */
-        .btn-action-floating {
-            border-radius: 50px;
-            padding: 14px 24px;
-            font-size: 1.05rem;
-            font-weight: 700;
-            box-shadow: 0 6px 18px rgba(13, 110, 253, 0.35);
-            transition: transform 0.15s active;
-        }
-
-        .btn-action-floating:active {
-            transform: scale(0.96);
-        }
-
-        /* Bottom Drawer / Sheet for Scanned Items */
-        .bottom-sheet {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: #ffffff;
-            border-top-left-radius: 24px;
-            border-top-right-radius: 24px;
-            box-shadow: 0 -6px 25px rgba(0,0,0,0.12);
-            z-index: 1040;
-            max-height: 80vh;
-            display: flex;
-            flex-direction: column;
-            transition: transform 0.3s cubic-bezier(0, 0, 0.2, 1);
-        }
-
-        .drawer-handle {
-            width: 40px;
-            height: 5px;
-            background: #cbd5e1;
-            border-radius: 10px;
-            margin: 10px auto 4px auto;
-            cursor: pointer;
-        }
-
-        .item-list-container {
-            overflow-y: auto;
-            max-height: 40vh;
-            padding: 0 16px 12px 16px;
-        }
-
-        /* Item Row Cards */
-        .item-card {
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            padding: 12px;
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            transition: background 0.2s;
-        }
-
-        .item-card.just-updated {
-            animation: highlightPulse 0.8s ease-out;
-        }
-
-        @keyframes highlightPulse {
-            0% { background-color: #d1e7dd; border-color: #0f5132; }
-            100% { background-color: #f8fafc; border-color: #e2e8f0; }
-        }
-
-        .qty-badge {
-            font-size: 1.1rem;
-            font-weight: 800;
-            min-width: 42px;
-            height: 42px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background-color: var(--primary-color);
-            color: white;
-        }
-
-        /* Bottom Nav Stats Bar */
-        .bottom-summary-bar {
-            background: #1e293b;
-            color: white;
-            padding: 12px 20px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            border-top: 1px solid rgba(255,255,255,0.1);
-        }
-
-        .custom-toggle-btn {
-            border-radius: 10px;
-            padding: 8px 12px;
-            font-size: 0.85rem;
-            font-weight: 600;
-        }
-
-        /* Modal Customizations */
-        .modal-content {
-            border-radius: 20px;
-            border: none;
-        }
-    </style>
 </head>
-<body>
+<body class="bg-light">
 
-    <!-- App Mobile Header -->
-    <header class="app-header d-flex justify-content-between align-items-center">
-        <div class="d-flex align-items-center gap-2">
-            <i class="fa-solid fa-barcode text-primary fs-4"></i>
-            <div>
-                <h6 class="mb-0 fw-bold">ScanCounter Pro</h6>
-                <small class="text-muted style-sm" style="font-size:0.75rem;">Penghitung Otomatis Mobile</small>
-            </div>
-        </div>
-        <div class="d-flex gap-2">
-            <button class="btn btn-sm btn-outline-light rounded-circle" id="btnToggleSound" onclick="toggleSound()" title="Efek Suara">
-                <i class="fa-solid fa-volume-high" id="iconSound"></i>
-            </button>
-            <button class="btn btn-sm btn-outline-light rounded-circle" onclick="switchCamera()" title="Ganti Kamera">
-                <i class="fa-solid fa-camera-rotate"></i>
-            </button>
-        </div>
-    </header>
-
-    <div class="container my-3 px-3">
-
-        <!-- Mode Selection Controls -->
-        <div class="card border-0 shadow-sm rounded-4 mb-3 p-2 bg-white">
-            <div class="row g-2 align-items-center">
-                <div class="col-7">
-                    <label class="form-label mb-1 text-muted small fw-semibold"><i class="fa-solid fa-sliders me-1"></i> Mode Scan:</label>
-                    <select id="scanModeSelect" class="form-select form-select-sm rounded-3 fw-bold text-dark" onchange="changeScanMode()">
-                        <option value="capture">Pause & Lanjut (Manual)</option>
-                        <option value="cooldown">Jeda Waktu (Auto)</option>
-                    </select>
-                </div>
-                <div class="col-5" id="cooldownConfigCol" style="display: none;">
-                    <label class="form-label mb-1 text-muted small fw-semibold"><i class="fa-solid fa-clock me-1"></i> Durasi Jeda:</label>
-                    <select id="cooldownSecSelect" class="form-select form-select-sm rounded-3 fw-semibold" onchange="updateCooldownDuration()">
-                        <option value="2">2 Detik</option>
-                        <option value="5">5 Detik</option>
-                        <option value="10" selected>10 Detik</option>
-                    </select>
-                </div>
-            </div>
-        </div>
-
-        <!-- Camera Card View -->
-        <div class="scanner-card mb-3">
-            <div id="statusBadge" class="scan-overlay-badge badge-ready">
-                <i class="fa-solid fa-circle-dot me-1"></i> Scanner Siap
-            </div>
-            
-            <!-- Camera Render Area -->
-            <div id="reader"></div>
-        </div>
-
-        <!-- Big Touch Control Action (Lanjut Scan) -->
-        <div class="mb-3 text-center" id="actionBtnContainer" style="display: none;">
-            <button id="btnLanjutScan" class="btn btn-primary btn-action-floating w-100 py-3" onclick="resumeScanning()">
-                <i class="fa-solid fa-play me-2"></i> Klik / Sentuh untuk Lanjut Scan
-            </button>
-        </div>
-
-    </div>
-
-    <!-- Bottom Sheet Drawer for Item List -->
-    <div class="bottom-sheet">
-        <div class="drawer-handle" onclick="toggleDrawer()"></div>
+    <div class="container my-5">
+        <h2 class="text-center mb-4">Scan Barcode & Tangkap (Pause) Otomatis</h2>
         
-        <div class="px-3 pt-1 pb-2 d-flex justify-content-between align-items-center border-bottom">
-            <h6 class="fw-bold mb-0 text-dark">
-                <i class="fa-solid fa-list-check text-primary me-2"></i>Daftar Hasil Scan
-            </h6>
-            <div class="d-flex gap-2">
-                <button class="btn btn-sm btn-light border rounded-pill px-2" onclick="openAddManualModal()">
-                    <i class="fa-solid fa-plus text-success me-1"></i> Manual
-                </button>
-                <button class="btn btn-sm btn-light border rounded-pill px-2 text-danger" onclick="confirmResetData()">
-                    <i class="fa-solid fa-trash-can me-1"></i> Reset
-                </button>
-            </div>
-        </div>
-
-        <!-- Scanned Items List Container -->
-        <div class="item-list-container pt-2" id="scannedItemList">
-            <!-- Dynamic Items Inserted Here -->
-            <div class="text-center text-muted py-4" id="emptyState">
-                <i class="fa-solid fa-qrcode fs-1 mb-2 opacity-50"></i>
-                <p class="mb-0 small">Belum ada item yang ter-scan.<br>Arahkan kamera ke barcode/QR Code.</p>
-            </div>
-        </div>
-
-        <!-- Bottom Total & Action Bar -->
-        <div class="bottom-summary-bar">
-            <div>
-                <span class="text-white-50 small d-block">Total Qty Terscan</span>
-                <span class="fs-4 fw-bold text-warning" id="totalQtyDisplay">0 <small class="fs-6 text-white fw-normal">pcs</small></span>
-                <span class="ms-2 text-white-50 small" id="totalPriceDisplay">(Rp 0)</span>
-            </div>
-            <div class="d-flex gap-2">
-                <button class="btn btn-success btn-sm fw-bold px-3 rounded-pill" onclick="exportWhatsApp()">
-                    <i class="fa-brands fa-whatsapp me-1"></i> Kirim
-                </button>
-                <button class="btn btn-outline-light btn-sm fw-bold px-3 rounded-pill" onclick="exportCSV()">
-                    <i class="fa-solid fa-file-csv me-1"></i> CSV
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal Tambah Data Manual / Produk Baru -->
-    <div class="modal fade" id="manualItemModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content p-3">
-                <div class="modal-header border-0 pb-0">
-                    <h5 class="modal-title fw-bold" id="manualModalTitle">Tambah / Edit Produk</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="formManualItem">
-                        <div class="mb-3">
-                            <label class="form-label small fw-semibold text-secondary">Kode Barcode / QR</label>
-                            <input type="text" id="inputBarcode" class="form-control rounded-3" placeholder="Contoh: 89912345" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label small fw-semibold text-secondary">Nama Barang</label>
-                            <input type="text" id="inputNama" class="form-control rounded-3" placeholder="Contoh: Kopi Sachet / Dus A" required>
-                        </div>
-                        <div class="row g-2 mb-3">
-                            <div class="col-6">
-                                <label class="form-label small fw-semibold text-secondary">Harga Satuan (Rp)</label>
-                                <input type="number" id="inputHarga" class="form-control rounded-3" placeholder="0 (Opsional)">
-                            </div>
-                            <div class="col-6">
-                                <label class="form-label small fw-semibold text-secondary">Jumlah (Qty)</label>
-                                <input type="number" id="inputQty" class="form-control rounded-3" value="1" min="1" required>
-                            </div>
-                        </div>
-                        <button type="submit" class="btn btn-primary w-100 rounded-3 py-2 fw-bold">Simpan Produk</button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Bootstrap 5 JS Bundle -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
-    <script>
-        // --- Database Lokal Sederhana (Predefined Items) ---
-        const localProductDb = {
-            "8996001332011": { nama: "Mie Instan Goreng", harga: 3500 },
-            "8992760121123": { nama: "Air Mineral 600ml", harga: 4000 },
-            "8999999111222": { nama: "Roti Coklat", harga: 8000 }
-        };
-
-        // State Aplikasi
-        let scannedItems = {}; // Format: { "barcode": { nama, qty, harga } }
-        let html5QrCode = null;
-        let isScanningActive = true;
-        let soundEnabled = true;
-        let currentScanMode = "capture"; // "capture" atau "cooldown"
-        let cooldownSeconds = 10;
-        let cooldownTimer = null;
-        let currentCameraFacing = "environment"; // Kamera belakang bawaan
-
-        // Web Audio API Synth Beep Sound
-        function playBeepSound() {
-            if (!soundEnabled) return;
-            try {
-                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-
-                osc.type = 'sine';
-                osc.frequency.value = 880; // Nada Beep Tinggi (A5)
-                gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.15);
-
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-
-                osc.start();
-                osc.stop(audioCtx.currentTime + 0.15);
-            } catch (e) {
-                console.log("Audio Error:", e);
-            }
-        }
-
-        // --- Inisialisasi Scanner ---
-        window.addEventListener('load', () => {
-            initScanner();
-        });
-
-        function initScanner() {
-            html5QrCode = new Html5Qrcode("reader");
-            const config = { 
-                fps: 15, 
-                qrbox: { width: 220, height: 160 },
-                aspectRatio: 1.0
-            };
-
-            html5QrCode.start(
-                { facingMode: currentCameraFacing },
-                config,
-                onScanSuccess,
-                onScanFailure
-            ).catch(err => {
-                console.error("Gagal membuka kamera:", err);
-                updateStatusBadge("badge-paused", "Akses Kamera Ditolak / Tidak Ditemukan");
-            });
-        }
-
-        // Toggle Kamera Depan / Belakang
-        function switchCamera() {
-            if (html5QrCode) {
-                html5QrCode.stop().then(() => {
-                    currentCameraFacing = (currentCameraFacing === "environment") ? "user" : "environment";
-                    initScanner();
-                }).catch(err => console.error(err));
-            }
-        }
-
-        // Toggle Suara Scan
-        function toggleSound() {
-            soundEnabled = !soundEnabled;
-            const icon = document.getElementById('iconSound');
-            const btn = document.getElementById('btnToggleSound');
-            if (soundEnabled) {
-                icon.className = "fa-solid fa-volume-high";
-                btn.className = "btn btn-sm btn-outline-light rounded-circle";
-            } else {
-                icon.className = "fa-solid fa-volume-xmark";
-                btn.className = "btn btn-sm btn-danger rounded-circle";
-            }
-        }
-
-        // Mode Scanning Change
-        function changeScanMode() {
-            currentScanMode = document.getElementById('scanModeSelect').value;
-            const cooldownCol = document.getElementById('cooldownConfigCol');
-            
-            if (currentScanMode === 'cooldown') {
-                cooldownCol.style.display = 'block';
-            } else {
-                cooldownCol.style.display = 'none';
-            }
-            
-            resumeScanning();
-        }
-
-        function updateCooldownDuration() {
-            cooldownSeconds = parseInt(document.getElementById('cooldownSecSelect').value) || 10;
-        }
-
-        // --- Logika Utama ketika Barcode Ter-scan ---
-        function onScanSuccess(decodedText) {
-            if (!isScanningActive) return;
-
-            // Efek Suara + Getar Mobile
-            playBeepSound();
-            if (navigator.vibrate) navigator.vibrate(80);
-
-            // Tambahkan / Update Data ke Memory
-            let itemNama = localProductDb[decodedText] ? localProductDb[decodedText].nama : `Item (${decodedText})`;
-            let itemHarga = localProductDb[decodedText] ? localProductDb[decodedText].harga : 0;
-
-            if (scannedItems[decodedText]) {
-                scannedItems[decodedText].qty += 1;
-            } else {
-                scannedItems[decodedText] = {
-                    nama: itemNama,
-                    qty: 1,
-                    harga: itemHarga
-                };
-            }
-
-            // Render Ulang Tampilan Tabel Hasil Scan
-            renderItemList(decodedText);
-
-            // Eksekusi Sesuai Mode Scan yang Dipilih
-            if (currentScanMode === "capture") {
-                // MODE 1: Pause Langsung & Tampilkan Tombol Lanjut
-                isScanningActive = false;
-                html5QrCode.pause();
-                updateStatusBadge("badge-paused", "Ter-capture! Siap Lanjut");
-                document.getElementById('actionBtnContainer').style.display = 'block';
-            } else if (currentScanMode === "cooldown") {
-                // MODE 2: Auto Cooldown / Hitung Mundur Jeda Waktu
-                startCooldownTimer();
-            }
-        }
-
-        function onScanFailure(error) {
-            // Error pencarian frame diabaikan
-        }
-
-        // Melanjutkan Proses Scan
-        function resumeScanning() {
-            if (cooldownTimer) clearInterval(cooldownTimer);
-            
-            isScanningActive = true;
-            document.getElementById('actionBtnContainer').style.display = 'none';
-            updateStatusBadge("badge-ready", "Scanner Siap");
-            
-            try {
-                html5QrCode.resume();
-            } catch(e) {
-                // Jika tidak sedang dipause
-            }
-        }
-
-        // Hitung Mundur Cooldown Jeda Waktu
-        function startCooldownTimer() {
-            isScanningActive = false;
-            let timer = cooldownSeconds;
-            
-            updateStatusBadge("badge-cooldown", `Jeda Scan: ${timer}s`);
-
-            cooldownTimer = setInterval(() => {
-                timer--;
-                if (timer > 0) {
-                    updateStatusBadge("badge-cooldown", `Jeda Scan: ${timer}s`);
-                } else {
-                    clearInterval(cooldownTimer);
-                    resumeScanning();
-                }
-            }, 1000);
-        }
-
-        // Status Badge Overlay Helper
-        function updateStatusBadge(className, text) {
-            const badge = document.getElementById('statusBadge');
-            badge.className = `scan-overlay-badge ${className}`;
-            badge.innerHTML = `<i class="fa-solid fa-circle-dot me-1"></i> ${text}`;
-        }
-
-        // --- Render Daftar Item & Total ---
-        function renderItemList(lastScannedCode = null) {
-            const container = document.getElementById('scannedItemList');
-            const emptyState = document.getElementById('emptyState');
-            
-            const keys = Object.keys(scannedItems);
-            
-            if (keys.length === 0) {
-                container.innerHTML = '';
-                container.appendChild(emptyState);
-                document.getElementById('totalQtyDisplay').innerHTML = `0 <small class="fs-6 text-white fw-normal">pcs</small>`;
-                document.getElementById('totalPriceDisplay').innerText = `(Rp 0)`;
-                return;
-            }
-
-            let html = '';
-            let totalQty = 0;
-            let totalPrice = 0;
-
-            // Render item paling baru di atas
-            keys.reverse().forEach(code => {
-                const item = scannedItems[code];
-                totalQty += item.qty;
-                totalPrice += (item.qty * item.harga);
-
-                const isJustUpdated = (code === lastScannedCode) ? 'just-updated' : '';
-
-                html += `
-                    <div class="item-card ${isJustUpdated}">
-                        <div class="d-flex align-items-center gap-3">
-                            <div class="qty-badge">${item.qty}</div>
-                            <div>
-                                <h6 class="fw-bold mb-0 text-dark">${item.nama}</h6>
-                                <small class="text-muted font-monospace">${code}</small>
-                                ${item.harga > 0 ? `<div class="small text-success font-monospace">@ Rp ${item.harga.toLocaleString('id-ID')}</div>` : ''}
-                            </div>
-                        </div>
-                        <div class="d-flex align-items-center gap-1">
-                            <button class="btn btn-sm btn-outline-secondary px-2 rounded-circle" onclick="adjustQty('${code}', -1)">-</button>
-                            <button class="btn btn-sm btn-outline-secondary px-2 rounded-circle" onclick="adjustQty('${code}', 1)">+</button>
-                            <button class="btn btn-sm text-danger px-2 ms-1" onclick="deleteItem('${code}')">
-                                <i class="fa-solid fa-xmark fs-5"></i>
+        <div class="row">
+            <!-- Kolom Kamera Scanner -->
+            <div class="col-md-5 mb-4">
+                <div class="card shadow-sm">
+                    <div class="card-body text-center">
+                        <h5 id="statusKamera">Kamera Aktif</h5>
+                        <div id="reader" style="width: 100%;"></div>
+                        
+                        <!-- Tombol untuk melanjutkan scan setelah dicapture -->
+                        <div class="mt-3">
+                            <button id="btnLanjut" class="btn btn-primary w-100" onclick="lanjutScan()" style="display: none;">
+                                📥 Lanjut Scan Barang Berikutnya
                             </button>
                         </div>
                     </div>
-                `;
+                </div>
+            </div>
+
+            <!-- Kolom Tabel Hasil Scan & Hitung Otomatis -->
+            <div class="col-md-7">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="mb-0">Daftar Barang Terscan</h5>
+                            <button class="btn btn-sm btn-outline-danger" onclick="resetData()">Reset Data</button>
+                        </div>
+                        
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-striped align-middle">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Kode Barcode</th>
+                                        <th>Nama Barang</th>
+                                        <th class="text-center">Jumlah (Qty)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabelScan">
+                                    <tr>
+                                        <td colspan="3" class="text-center text-muted">Belum ada barcode yang disscan</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="mt-3 p-3 bg-white border rounded">
+                            <h4>Total Keseluruhan Item: <span id="totalQty" class="text-primary">0</span> pcs</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Simulasi database nama barang
+        const databaseProduk = {
+            "8996001332011": "Mie Instan Goreng",
+            "8992760121123": "Air Mineral 600ml",
+            "8999999111222": "Roti Coklat"
+        };
+
+        let scannedData = {};
+        let html5QrCode;
+        let isScanning = true;
+
+        // Inisialisasi Scanner menggunakan objek Html5Qrcode (bukan Scanner UI bawaan)
+        html5QrCode = new Html5Qrcode("reader");
+
+        const config = { fps: 10, qrbox: { width: 250, height: 150 } };
+
+        // Fungsi ketika Barcode berhasil dibaca
+        function onScanSuccess(decodedText, decodedResult) {
+            if (!isScanning) return; // Jika sedang dipause, abaikan
+            
+            // Hentikan (pause) scanner sementara setelah sukses scan
+            isScanning = false;
+            html5QrCode.pause(); // Menahan kamera agar tidak scan terus-menerus
+
+            // Ubah teks status dan tampilkan tombol Lanjut
+            document.getElementById('statusKamera').innerText = "Berhasil Dicapture!";
+            document.getElementById('statusKameraclassName = "text-success fw-bold"');
+            document.getElementById('btnLanjut').style.display = "block";
+
+            // Proses penambahan data (Qty +1)
+            if (scannedData[decodedText]) {
+                scannedData[decodedText].qty += 1;
+            } else {
+                let namaBarang = databaseProduk[decodedText] || "Barang Lainnya (Tidak Dikenal)";
+                scannedData[decodedText] = {
+                    nama: namaBarang,
+                    qty: 1
+                };
+            }
+            updateTabel();
+        }
+
+        function onScanFailure(error) {
+            // Error saat mencari frame diabaikan
+        }
+
+        // Fungsi untuk melanjutkan scan setelah tombol diklik
+        function lanjutScan() {
+            html5QrCode.resume(); // Lanjutkan kamera
+            isScanning = true;
+            document.getElementById('statusKamera').innerText = "Kamera Aktif";
+            document.getElementById('btnLanjut').style.display = "none"; // Sembunyikan tombol lagi
+        }
+
+        // Mulai kamera saat halaman dimuat
+        html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess, onScanFailure)
+            .catch(err => {
+                alert("Gagal membuka kamera: " + err);
             });
 
-            container.innerHTML = html;
-            document.getElementById('totalQtyDisplay').innerHTML = `${totalQty} <small class="fs-6 text-white fw-normal">pcs</small>`;
-            document.getElementById('totalPriceDisplay').innerText = totalPrice > 0 ? `(Rp ${totalPrice.toLocaleString('id-ID')})` : ``;
-        }
+        function updateTabel() {
+            const tbody = document.getElementById('tabelScan');
+            tbody.innerHTML = "";
 
-        // Adjust Qty (+ / -)
-        function adjustQty(code, change) {
-            if (scannedItems[code]) {
-                scannedItems[code].qty += change;
-                if (scannedItems[code].qty <= 0) {
-                    delete scannedItems[code];
-                }
-                renderItemList();
-            }
-        }
+            let totalSemuaQty = 0;
+            let keys = Object.keys(scannedData);
 
-        // Hapus Individual Item
-        function deleteItem(code) {
-            if (scannedItems[code]) {
-                delete scannedItems[code];
-                renderItemList();
-            }
-        }
-
-        // Reset All Data
-        function confirmResetData() {
-            if (Object.keys(scannedItems).length === 0) return;
-            if (confirm("Apakah Anda yakin ingin mereset/menghapus semua data hitungan?")) {
-                scannedItems = {};
-                renderItemList();
-                resumeScanning();
-            }
-        }
-
-        // Modal Input Manual
-        const manualModal = new bootstrap.Modal(document.getElementById('manualItemModal'));
-        
-        function openAddManualModal() {
-            document.getElementById('formManualItem').reset();
-            document.getElementById('inputQty').value = 1;
-            manualModal.show();
-        }
-
-        document.getElementById('formManualItem').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const code = document.getElementById('inputBarcode').value.trim();
-            const nama = document.getElementById('inputNama').value.trim();
-            const harga = parseFloat(document.getElementById('inputHarga').value) || 0;
-            const qty = parseInt(document.getElementById('inputQty').value) || 1;
-
-            if (scannedItems[code]) {
-                scannedItems[code].qty += qty;
-                scannedItems[code].nama = nama;
-                if (harga > 0) scannedItems[code].harga = harga;
-            } else {
-                scannedItems[code] = { nama, qty, harga };
-            }
-
-            renderItemList(code);
-            manualModal.hide();
-        });
-
-        // --- Export Feature ---
-        function exportWhatsApp() {
-            const keys = Object.keys(scannedItems);
             if (keys.length === 0) {
-                alert("Belum ada data untuk dikirim.");
+                tbody.innerHTML = `<tr><td colspan="3" class="text-center text-muted">Belum ada barcode yang disscan</td></tr>`;
+                document.getElementById('totalQty').innerText = "0";
                 return;
             }
 
-            let text = "*REKAP HASIL SCAN BARCODE*\n";
-            text += `Tanggal: ${new Date().toLocaleDateString('id-ID')}\n`;
-            text += "-----------------------------------\n";
-
-            let totalQty = 0;
             keys.forEach(code => {
-                const item = scannedItems[code];
-                text += `• *${item.nama}*\n  Qty: ${item.qty} pcs | Kode: ${code}\n`;
-                totalQty += item.qty;
+                let item = scannedData[code];
+                totalSemuaQty += item.qty;
+
+                let row = `<tr>
+                    <td><code>${code}</code></td>
+                    <td>${item.nama}</td>
+                    <td class="text-center"><strong>${item.qty}</strong></td>
+                </tr>`;
+                tbody.innerHTML += row;
             });
 
-            text += "-----------------------------------\n";
-            text += `*TOTAL KESELURUHAN: ${totalQty} pcs*\n`;
-
-            const encoded = encodeURIComponent(text);
-            window.open(`https://wa.me/?text=${encoded}`, '_blank');
+            document.getElementById('totalQty').innerText = totalSemuaQty;
         }
 
-        function exportCSV() {
-            const keys = Object.keys(scannedItems);
-            if (keys.length === 0) {
-                alert("Belum ada data untuk di-export.");
-                return;
+        function resetData() {
+            scannedData = {};
+            updateTabel();
+            if (!isScanning) {
+                lanjutScan();
             }
-
-            let csvContent = "data:text/csv;charset=utf-8,Kode Barcode,Nama Barang,Harga Satuan,Jumlah Qty,Total Harga\n";
-
-            keys.forEach(code => {
-                const item = scannedItems[code];
-                const totalHargaItem = item.qty * item.harga;
-                csvContent += `"${code}","${item.nama}",${item.harga},${item.qty},${totalHargaItem}\n`;
-            });
-
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", `Scan_Report_${new Date().toISOString().slice(0,10)}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-
-        // Toggle Drawer / Bottom Sheet View
-        let isDrawerExpanded = false;
-        function toggleDrawer() {
-            const drawer = document.querySelector('.bottom-sheet');
-            if (isDrawerExpanded) {
-                drawer.style.transform = 'translateY(0)';
-            } else {
-                drawer.style.transform = 'translateY(calc(100% - 110px))';
-            }
-            isDrawerExpanded = !isDrawerExpanded;
         }
     </script>
+
 </body>
 </html>
