@@ -3,88 +3,153 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Line Crossing Object Counter</title>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+    <title>AI Line Crossing Counter</title>
+    <!-- Memuat TensorFlow.js dan model COCO-SSD -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.18.0/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.2/dist/coco-ssd.min.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; margin: 0; padding: 10px; background: #f4f4f9; }
-        .container { position: relative; display: inline-block; }
-        video, canvas { width: 100%; max-width: 450px; border-radius: 10px; display: block; margin: auto; }
-        canvas { position: absolute; top: 0; left: 0; pointer-events: none; }
-        #counter-box { font-size: 22px; font-weight: bold; color: #d9534f; margin-top: 10px; }
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 15px;
+            background: #1e1e1e;
+            color: #ffffff;
+        }
+        h2 { font-size: 1.2rem; margin-bottom: 10px; }
+        .container {
+            position: relative;
+            display: inline-block;
+            max-width: 100%;
+        }
+        video, canvas {
+            width: 100%;
+            max-width: 400px;
+            height: auto;
+            border-radius: 10px;
+            display: block;
+            margin: auto;
+            transform: scaleX(-1); /* Efek cermin/mirror */
+        }
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+        }
+        #status-box {
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: #f39c12;
+        }
+        #counter-box {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #2ecc71;
+            margin-top: 5px;
+            background: #2d2d2d;
+            padding: 10px;
+            border-radius: 8px;
+            display: inline-block;
+        }
     </style>
 </head>
 <body>
 
-    <h2>Line Crossing Counter (Kamera HP)</h2>
+    <h2>Alat Hitung Otomatis (Kamera HP)</h2>
     <div class="container">
         <video id="webcam" autoplay playsinline muted></video>
         <canvas id="canvas"></canvas>
     </div>
-    <div id="counter-box">Total Lewat: <span id="count">0</span></div>
+    
+    <div>
+        <div id="status-box">Memuat model AI, mohon tunggu...</div>
+        <div id="counter-box">Total Lewat: <span id="count">0</span></div>
+    </div>
 
     <script>
         const video = document.getElementById('webcam');
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
         const countSpan = document.getElementById('count');
+        const statusBox = document.getElementById('status-box');
 
         let model = null;
         let totalCount = 0;
-        // Menyimpan status posisi objek sebelumnya untuk melacak perpindahan
         let trackedObjects = {}; 
+        let isDetecting = false;
 
         async function setupCamera() {
-            const stream = await navigator.mediaDevices.getUserMedia({
-                video: { width: 640, height: 480, facingMode: 'environment' }
-            });
-            video.srcObject = stream;
-            return new Promise((resolve) => {
-                video.onloadedmetadata = () => {
-                    canvas.width = video.videoWidth;
-                    canvas.height = video.videoHeight;
-                    resolve(video);
-                };
-            });
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { width: 640, height: 480, facingMode: 'environment' }
+                });
+                video.srcObject = stream;
+                return new Promise((resolve) => {
+                    video.onloadedmetadata = () => {
+                        canvas.width = video.videoWidth;
+                        canvas.height = video.videoHeight;
+                        resolve(video);
+                    };
+                });
+            } catch (error) {
+                statusBox.innerText = "Gagal mengakses kamera! Pastikan izin diberikan & via HTTPS.";
+                console.error(error);
+            }
         }
 
         async function run() {
+            statusBox.innerText = "Mengaktifkan kamera...";
             await setupCamera();
+            
+            statusBox.innerText = "Mengunduh model AI (bisa beberapa detik)...";
             model = await cocoSsd.load();
-            document.getElementById('counter-box').innerText = "Sistem Aktif. Menghitung Objek Lewat...";
+            
+            statusBox.innerText = "Sistem Aktif! Arahkan ke objek bergerak.";
+            statusBox.style.color = "#2ecc71";
+            isDetecting = true;
             detectFrame();
         }
 
         async function detectFrame() {
-            if (model) {
+            if (!isDetecting) return;
+
+            if (model && video.readyState === 4) {
                 const predictions = await model.detect(video);
                 
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-                // Buat garis virtual di tengah tinggi video (Y axis)
+                // Garis virtual pemantau di tengah layar (sumbu Y)
                 const lineY = canvas.height / 2;
+                
+                // Gambar garis merah di canvas
+                ctx.save();
+                ctx.scale(-1, 1); // Karena video di-mirror, garis juga disesuaikan
+                ctx.translate(-canvas.width, 0);
+                
                 ctx.strokeStyle = "red";
                 ctx.lineWidth = 4;
                 ctx.beginPath();
                 ctx.moveTo(0, lineY);
                 ctx.lineTo(canvas.width, lineY);
                 ctx.stroke();
+                ctx.restore();
 
-                // Filter hanya objek 'person'
+                // Filter hanya objek 'person' (orang). Bisa diganti objek lain misal 'dog', 'car', dll.
                 const persons = predictions.filter(p => p.class === 'person');
                 let currentFrameObjects = {};
 
-                persons.forEach((person, index) => {
+                persons.forEach((person) => {
                     const [x, y, width, height] = person.bbox;
                     const centerX = x + width / 2;
                     const centerY = y + height / 2;
 
-                    // Cari ID sederhana berdasarkan kedekatan posisi dari frame sebelumnya
+                    // Melacak ID objek antar frame berdasarkan kedekatan posisi
                     let matchedId = null;
                     for (let id in trackedObjects) {
                         let prev = trackedObjects[id];
                         let dist = Math.hypot(prev.x - centerX, prev.y - centerY);
-                        if (dist < 80) { // Toleransi jarak geser antar frame
+                        if (dist < 100) { // Toleransi jarak geser
                             matchedId = id;
                             break;
                         }
@@ -94,9 +159,10 @@
                         matchedId = 'obj_' + Math.random().toString(36).substr(2, 5);
                     }
 
-                    // Cek apakah objek melintasi garis (dari atas ke bawah garis Y)
+                    // Logika Crossing: Cek jika posisi Y objek melewati garis tengah
                     if (trackedObjects[matchedId]) {
                         let prevY = trackedObjects[matchedId].y;
+                        // Jika dari atas garis ( < lineY ) bergerak turun melewati garis ( >= lineY )
                         if (prevY < lineY && centerY >= lineY) {
                             totalCount++;
                             countSpan.innerText = totalCount;
@@ -105,19 +171,22 @@
 
                     currentFrameObjects[matchedId] = { x: centerX, y: centerY };
 
-                    // Gambar kotak dan titik tengah di canvas
+                    // Gambar kotak deteksi di layar
                     ctx.strokeStyle = "#00FF00";
-                    ctx.lineWidth = 2;
+                    ctx.lineWidth = 3;
                     ctx.strokeRect(x, y, width, height);
+                    
                     ctx.fillStyle = "yellow";
                     ctx.fillRect(centerX - 4, centerY - 4, 8, 8);
                 });
 
                 trackedObjects = currentFrameObjects;
             }
+            
             requestAnimationFrame(detectFrame);
         }
 
+        // Jalankan program saat halaman dimuat
         run();
     </script>
 </body>
